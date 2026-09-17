@@ -2,13 +2,15 @@
 
     <application
         android:theme="@style/AppTheme"
-        android:label="Malz VS"
+        android:label="MalzCode"
         android:allowBackup="false"
-        android:supportsRtl="true">
+        android:supportsRtl="true"
+        android:usesCleartextTraffic="true">
 
         <activity
             android:name=".MainActivity"
-            android:screenOrientation="landscape"
+            android:screenOrientation="fullSensor"
+            android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="true">
 
             <intent-filter>

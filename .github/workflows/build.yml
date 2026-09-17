@@ -1,4 +1,4 @@
-name: Build Malz VS
+name: Build MalzCode
 
 on:
   push:
@@ -7,10 +7,13 @@ on:
   workflow_dispatch:
 
 jobs:
+
   build:
+
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -20,9 +23,26 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Download Python Runtime
+        run: |
+          set -e
+
+          mkdir -p app/src/main/assets/pyodide
+
+          wget -q \
+            https://github.com/pyodide/pyodide/releases/download/0.29.5/pyodide-0.29.5.tar.bz2 \
+            -O /tmp/pyodide.tar.bz2
+
+          tar -xjf /tmp/pyodide.tar.bz2 \
+            -C app/src/main/assets/pyodide \
+            --strip-components=1
+
+          rm -f /tmp/pyodide.tar.bz2
+
       - name: Android SDK
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
+
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
             "platform-tools" \
             "platforms;android-34" \
@@ -34,10 +54,11 @@ jobs:
           gradle-version: '8.2'
 
       - name: Build APK
-        run: gradle assembleDebug --no-daemon
+        run: |
+          gradle assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MalzVs-debug
+          name: MalzCode-debug
           path: app/build/outputs/apk/debug/app-debug.apk
