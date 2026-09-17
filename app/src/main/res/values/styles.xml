@@ -1,0 +1,8 @@
+<resources>
+    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">#181818</item>
+        <item name="android:navigationBarColor">#181818</item>
+    </style>
+</resources>
