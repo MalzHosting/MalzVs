@@ -3,6 +3,19 @@ plugins {
 }
 
 android {
+    androidResources {
+        noCompress += [
+            "wasm",
+            "data",
+            "zip",
+            "whl",
+            "br",
+            "gz",
+            "bz2",
+            "xz"
+        ]
+    }
+
     namespace 'com.malz.vs'
     compileSdk 34
 
