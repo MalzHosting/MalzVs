@@ -166,18 +166,18 @@ public class MainActivity extends Activity {
         top.setPadding(dp(8), 0, dp(8), 0);
         top.setBackgroundColor(Color.rgb(43, 43, 43));
 
-        TextView back = tv("‹", 38, Color.WHITE);
+        TextView back = tv("‹", 30, Color.WHITE);
         back.setGravity(Gravity.CENTER);
-        top.addView(back, new LinearLayout.LayoutParams(dp(42), dp(70)));
+        top.addView(back, new LinearLayout.LayoutParams(dp(36), dp(52)));
 
         LinearLayout titleBox = new LinearLayout(this);
         titleBox.setOrientation(LinearLayout.VERTICAL);
         titleBox.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView title = tv("Coding Python", 22, Color.WHITE);
+        TextView title = tv("Coding Python", 17, Color.WHITE);
         title.setTypeface(Typeface.DEFAULT_BOLD);
 
-        filename = tv(currentFile, 13, Color.LTGRAY);
+        filename = tv(currentFile, 11, Color.LTGRAY);
 
         titleBox.addView(title);
         titleBox.addView(filename);
@@ -193,10 +193,10 @@ public class MainActivity extends Activity {
         menu.setTextSize(13);
 
         top.addView(runButton,
-                new LinearLayout.LayoutParams(dp(72), dp(70)));
+                new LinearLayout.LayoutParams(dp(62), dp(52)));
 
         top.addView(menu,
-                new LinearLayout.LayoutParams(dp(72), dp(70)));
+                new LinearLayout.LayoutParams(dp(62), dp(52)));
 
         editorPage.addView(top);
 
@@ -233,7 +233,7 @@ public class MainActivity extends Activity {
 
 
         codeArea.addView(editor,
-                new LinearLayout.LayoutParams(0, 0, 1));
+                new LinearLayout.LayoutParams(0, -1, 1));
 
         editorPage.addView(codeArea,
                 new LinearLayout.LayoutParams(-1, 0, 1));
@@ -253,7 +253,7 @@ public class MainActivity extends Activity {
         addTool(toolbar, "⇨", "right");
 
         editorPage.addView(toolbar,
-                new LinearLayout.LayoutParams(-1, dp(55)));
+                new LinearLayout.LayoutParams(-1, dp(42)));
 
         runButton.setOnClickListener(v -> runPython());
 
