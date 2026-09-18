@@ -27,14 +27,30 @@ jobs:
 
       - name: Setup Android SDK
         run: |
-          export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
-          export ANDROID_HOME=/usr/local/lib/android/sdk
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
-          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
-          echo "$ANDROID_SDK_ROOT/cmdline-tools/16.0/bin" >> "$GITHUB_PATH"
-          sdkmanager --version
-          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-          yes | sdkmanager --licenses || true
+          set -e
+
+          SDKMANAGER=$(find "$ANDROID_HOME" "$ANDROID_SDK_ROOT" /usr/local/lib/android/sdk /opt/android-sdk -type f -name sdkmanager 2>/dev/null | head -n 1 || true)
+
+          if [ -z "$SDKMANAGER" ]; then
+            echo "sdkmanager tidak ditemukan"
+            echo "Mencari Android SDK..."
+            find /usr/local/lib/android /opt/android-sdk "$HOME" -type f -name sdkmanager 2>/dev/null | head -30
+            exit 1
+          fi
+
+          echo "SDKMANAGER=$SDKMANAGER"
+
+          SDK_ROOT=$(dirname "$(dirname "$(dirname "$SDKMANAGER")")")
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "$(dirname "$SDKMANAGER")" >> "$GITHUB_PATH"
+
+          "$SDKMANAGER" --sdk_root="$SDK_ROOT" \
+            "platform-tools" \
+            "platforms;android-34" \
+            "build-tools;34.0.0"
+
+          yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --licenses || true
 
       - name: Build MalzPy
         run: |
