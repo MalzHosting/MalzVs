@@ -1,4 +1,4 @@
-name: Build MalzCode
+name: Build MalzPy
 
 on:
   push:
@@ -23,25 +23,40 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Download Python Runtime
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.56
+          actions-cache-folder: emsdk-cache
+
+      - name: Build MicroPython WebAssembly
         run: |
-          set -e
+          git clone --depth 1 --branch v1.23.0 \
+            https://github.com/micropython/micropython.git /tmp/micropython
 
-          mkdir -p app/src/main/assets/pyodide
+          cd /tmp/micropython
 
-          wget -q \
-            https://github.com/pyodide/pyodide/releases/download/0.29.5/pyodide-0.29.5.tar.bz2 \
-            -O /tmp/pyodide.tar.bz2
+          make -C mpy-cross
 
-          tar -xjf /tmp/pyodide.tar.bz2 \
-            -C app/src/main/assets/pyodide \
-            --strip-components=1
+          cd ports/webassembly
 
-          rm -f /tmp/pyodide.tar.bz2
+          make
+
+          mkdir -p "$GITHUB_WORKSPACE/app/src/main/assets/micropython"
+
+          cp build-standard/micropython.mjs \
+            "$GITHUB_WORKSPACE/app/src/main/assets/micropython/"
+
+          cp build-standard/micropython.wasm \
+            "$GITHUB_WORKSPACE/app/src/main/assets/micropython/"
+
+          ls -lh \
+            "$GITHUB_WORKSPACE/app/src/main/assets/micropython"
 
       - name: Android SDK
         run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            --licenses >/dev/null 2>&1 || true
 
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
             "platform-tools" \
@@ -57,10 +72,25 @@ jobs:
         env:
           GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=1024m"
         run: |
-          gradle assembleDebug --no-daemon -Dorg.gradle.jvmargs=-Xmx4096m
+          gradle assembleDebug \
+            --no-daemon \
+            -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m"
+
+      - name: Check APK size
+        run: |
+          ls -lh app/build/outputs/apk/debug/app-debug.apk
+
+          SIZE=$(stat -c%s app/build/outputs/apk/debug/app-debug.apk)
+
+          if [ "$SIZE" -gt 73400320 ]; then
+            echo "ERROR: APK lebih dari 70 MB"
+            exit 1
+          fi
+
+          echo "APK <= 70 MB"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MalzCode-debug
+          name: MalzPy-debug
           path: app/build/outputs/apk/debug/app-debug.apk

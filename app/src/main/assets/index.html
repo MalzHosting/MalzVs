@@ -1,223 +1,146 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport"
 content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 
-<title>MalzCode</title>
-
 <style>
-
-*{
-    box-sizing:border-box;
-    -webkit-tap-highlight-color:transparent;
-}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 
 html,body{
-    margin:0;
-    width:100%;
-    height:100%;
-    overflow:hidden;
-    background:#1e1e1e;
-    color:#ddd;
-    font-family:Arial,sans-serif;
-}
-
-button{
-    border:0;
-    background:#333;
-    color:#ddd;
-    padding:8px 11px;
-    margin:2px;
-    border-radius:4px;
-    font-size:12px;
-}
-
-button:active{
-    background:#555;
+ margin:0;
+ width:100%;
+ height:100%;
+ overflow:hidden;
+ background:#303030;
+ color:#eee;
+ font-family:Arial,sans-serif
 }
 
 #app{
-    width:100%;
-    height:100%;
-    display:flex;
-    flex-direction:column;
+ width:100%;
+ height:100%;
+ display:flex;
+ flex-direction:column
 }
 
-#top{
-    height:48px;
-    min-height:48px;
-    background:#181818;
-    display:flex;
-    align-items:center;
-    border-bottom:1px solid #303030;
+.top{
+ height:62px;
+ min-height:62px;
+ background:#292929;
+ display:flex;
+ align-items:center;
+ gap:9px;
+ padding:7px 10px
 }
 
-#logo{
-    font-size:16px;
-    font-weight:bold;
-    padding:0 12px;
-    color:#fff;
+.logo{
+ font-size:21px;
+ font-weight:bold;
+ white-space:nowrap
 }
 
-#filename{
-    flex:1;
-    overflow:hidden;
-    white-space:nowrap;
-    text-overflow:ellipsis;
-    color:#aaa;
+.filename{
+ flex:1;
+ min-width:80px;
+ background:#202020;
+ border:1px solid #444;
+ border-radius:5px;
+ color:#ddd;
+ padding:9px;
+ font-family:monospace
 }
 
-#main{
-    flex:1;
-    min-height:0;
-    display:flex;
+button{
+ background:#383838;
+ border:0;
+ border-radius:5px;
+ color:#eee;
+ padding:9px 12px;
+ font-weight:bold
 }
 
-#explorer{
-    width:190px;
-    min-width:150px;
-    background:#181818;
-    border-right:1px solid #303030;
-    display:flex;
-    flex-direction:column;
+button:active{background:#555}
+
+.run{background:#454545}
+
+.main{
+ flex:1;
+ min-height:0;
+ display:flex
 }
 
-#explorerTitle{
-    padding:12px;
-    font-size:12px;
-    color:#aaa;
-    border-bottom:1px solid #303030;
+.editor{
+ flex:1;
+ min-width:0;
+ display:flex;
+ background:#303030
 }
 
-#files{
-    overflow:auto;
-    flex:1;
+.numbers{
+ width:42px;
+ min-width:42px;
+ padding:9px 7px 0 0;
+ text-align:right;
+ color:#777;
+ font:15px/24px monospace;
+ overflow:hidden
 }
 
-.file{
-    padding:8px 12px;
-    font-family:monospace;
-    font-size:13px;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
+textarea{
+ flex:1;
+ border:0;
+ outline:0;
+ resize:none;
+ background:#303030;
+ color:#eee;
+ padding:9px 10px;
+ font:15px/24px monospace;
+ tab-size:4;
+ white-space:pre;
+ caret-color:#fff
 }
 
-.file.active{
-    background:#37373d;
-    color:#fff;
+.terminal{
+ height:145px;
+ min-height:145px;
+ background:#202020;
+ border-top:1px solid #444;
+ display:flex;
+ flex-direction:column
 }
 
-#workspace{
-    flex:1;
-    min-width:0;
-    display:flex;
-    flex-direction:column;
+.output{
+ flex:1;
+ overflow:auto;
+ padding:8px;
+ color:#ddd;
+ font:12px/18px monospace
 }
 
-#tabs{
-    height:38px;
-    min-height:38px;
-    display:flex;
-    background:#181818;
-    overflow:auto;
+.tools{
+ height:52px;
+ min-height:52px;
+ display:flex;
+ overflow-x:auto;
+ border-top:1px solid #383838
 }
 
-.tab{
-    min-width:110px;
-    max-width:180px;
-    padding:10px 12px;
-    border-right:1px solid #303030;
-    font-size:12px;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
+.tools button{
+ min-width:58px;
+ height:52px;
+ border-radius:0;
+ background:#292929;
+ font:15px monospace
 }
 
-.tab.active{
-    background:#1e1e1e;
-    color:#fff;
+@media(max-width:650px){
+ .top{height:58px;min-height:58px;padding:6px}
+ .logo{font-size:17px}
+ .top button{padding:8px}
+ .terminal{height:125px;min-height:125px}
 }
-
-#editorArea{
-    flex:1;
-    min-height:0;
-    display:flex;
-    background:#1e1e1e;
-}
-
-#lineNumbers{
-    width:48px;
-    overflow:hidden;
-    text-align:right;
-    padding:12px 8px 12px 0;
-    color:#666;
-    background:#1e1e1e;
-    font-family:monospace;
-    font-size:14px;
-    line-height:21px;
-    user-select:none;
-}
-
-#editor{
-    flex:1;
-    width:0;
-    resize:none;
-    border:0;
-    outline:0;
-    background:#1e1e1e;
-    color:#dcdcdc;
-    padding:12px;
-    font-family:monospace;
-    font-size:14px;
-    line-height:21px;
-    tab-size:4;
-}
-
-#bottom{
-    height:150px;
-    min-height:90px;
-    background:#111;
-    border-top:1px solid #333;
-    display:flex;
-    flex-direction:column;
-}
-
-#terminalTitle{
-    height:32px;
-    padding:8px 12px;
-    color:#aaa;
-    font-size:12px;
-    border-bottom:1px solid #292929;
-}
-
-#terminal{
-    flex:1;
-    overflow:auto;
-    padding:8px 12px;
-    font-family:monospace;
-    font-size:12px;
-    white-space:pre-wrap;
-    color:#ddd;
-}
-
-.prompt{
-    color:#7bd88f;
-}
-
-.error{
-    color:#ff7777;
-}
-
-#language{
-    padding:0 10px;
-    color:#777;
-    font-family:monospace;
-    font-size:11px;
-}
-
 </style>
 </head>
 
@@ -225,62 +148,56 @@ button:active{
 
 <div id="app">
 
-<div id="top">
+<div class="top">
+ <div class="logo">MalzPy</div>
 
-<div id="logo">MalzCode</div>
+ <input
+  id="filename"
+  class="filename"
+  value="main.py"
+  spellcheck="false">
 
-<div id="filename">untitled.txt</div>
-
-<div id="language">TEXT</div>
-
-<button onclick="newFile()">NEW</button>
-<button onclick="Android.openFile()">OPEN</button>
-<button onclick="save()">SAVE</button>
-<button onclick="saveAs()">SAVE AS</button>
-<button onclick="runCode()">▶ RUN</button>
-
+ <button onclick="newFile()">NEW</button>
+ <button onclick="Android.openFile()">OPEN</button>
+ <button onclick="saveFile()">SAVE</button>
+ <button onclick="saveAs()">SAVE AS</button>
+ <button class="run" onclick="runCode()">RUN</button>
 </div>
 
-<div id="main">
+<div class="main">
 
-<div id="explorer">
+<div class="editor">
 
-<div id="explorerTitle">
-EXPLORER
-</div>
-
-<div id="files"></div>
-
-</div>
-
-<div id="workspace">
-
-<div id="tabs"></div>
-
-<div id="editorArea">
-
-<div id="lineNumbers">1</div>
+<div id="numbers" class="numbers">1</div>
 
 <textarea
-id="editor"
-spellcheck="false"
-autocorrect="off"
-autocapitalize="off"
-placeholder="Start coding..."></textarea>
+ id="code"
+ spellcheck="false"
+ autocorrect="off"
+ autocomplete="off"
+ autocapitalize="off"></textarea>
 
 </div>
 
-<div id="bottom">
-
-<div id="terminalTitle">
-TERMINAL
 </div>
 
-<div id="terminal">
-<span class="prompt">$ MalzCode terminal ready</span>
+<div class="terminal">
+
+<div id="output" class="output">
+MalzPy Python Terminal<br>
+Python runtime: loading...
 </div>
 
-</div>
+<div class="tools">
+
+<button onclick="insert('    ')">Tab</button>
+<button onclick="pair('{}')">{}</button>
+<button onclick="pair('()')">()</button>
+<button onclick="pair('[]')">[]</button>
+<button onclick="pair('\"\"')">""</button>
+<button onclick="insert(':')">:</button>
+<button onclick="undo()">↶</button>
+<button onclick="redo()">↷</button>
 
 </div>
 
@@ -290,644 +207,222 @@ TERMINAL
 
 <script>
 
-const editor =
-document.getElementById("editor");
+const editor=document.getElementById("code");
+const numbers=document.getElementById("numbers");
+const output=document.getElementById("output");
+const filename=document.getElementById("filename");
 
-const lineNumbers =
-document.getElementById("lineNumbers");
+let files={
+ "main.py":"print('Hello from MalzPy')\n\nnama = 'Malz'\nprint('Halo', nama)\n\nfor i in range(5):\n    print(i)"
+};
 
-const filename =
-document.getElementById("filename");
-
-const language =
-document.getElementById("language");
-
-const terminal =
-document.getElementById("terminal");
-
-const files =
-document.getElementById("files");
-
-const tabs =
-document.getElementById("tabs");
-
-let currentName = "untitled.txt";
-let currentLanguage = "text";
-
-let projectFiles = {};
-
-function detectLanguage(name){
-
-    let n = name.toLowerCase();
-
-    if(n.endsWith(".py")) return "python";
-    if(n.endsWith(".js")) return "javascript";
-    if(n.endsWith(".html") || n.endsWith(".htm")) return "html";
-    if(n.endsWith(".css")) return "css";
-    if(n.endsWith(".json")) return "json";
-    if(n.endsWith(".java")) return "java";
-    if(n.endsWith(".c")) return "c";
-    if(n.endsWith(".cpp") || n.endsWith(".cc")) return "cpp";
-    if(n.endsWith(".h")) return "c/c++ header";
-    if(n.endsWith(".xml")) return "xml";
-    if(n.endsWith(".sh")) return "shell";
-    if(n.endsWith(".sql")) return "sql";
-    if(n.endsWith(".md")) return "markdown";
-
-    return "text";
+function updateNumbers(){
+ let n=editor.value.split("\n").length;
+ let s="";
+ for(let i=1;i<=n;i++)s+=i+"\\n";
+ numbers.textContent=s;
 }
 
-function updateLanguage(){
-
-    currentLanguage =
-        detectLanguage(currentName);
-
-    language.textContent =
-        currentLanguage.toUpperCase();
-
-    filename.textContent =
-        currentName;
+function insert(text){
+ let a=editor.selectionStart;
+ let b=editor.selectionEnd;
+ editor.setRangeText(text,a,b,"end");
+ editor.focus();
+ updateNumbers();
 }
 
-function updateLines(){
-
-    let count =
-        editor.value.split("\n").length;
-
-    let out = "";
-
-    for(let i=1;i<=count;i++){
-        out += i + "\n";
-    }
-
-    lineNumbers.textContent = out;
+function pair(text){
+ let a=editor.selectionStart;
+ let b=editor.selectionEnd;
+ let selected=editor.value.substring(a,b);
+ let value=selected?text[0]+selected+text[1]:text;
+ editor.setRangeText(value,a,b,"end");
+ editor.focus();
+ updateNumbers();
 }
 
-function updateTabs(){
-
-    tabs.innerHTML = "";
-
-    Object.keys(projectFiles).forEach(name => {
-
-        let tab =
-            document.createElement("div");
-
-        tab.className =
-            "tab" +
-            (name === currentName
-                ? " active"
-                : "");
-
-        tab.textContent = name;
-
-        tab.onclick = () => {
-
-            saveMemory();
-
-            currentName = name;
-            editor.value =
-                projectFiles[name];
-
-            updateLanguage();
-            updateLines();
-            updateTabs();
-        };
-
-        tabs.appendChild(tab);
-    });
+function undo(){
+ document.execCommand("undo");
+ updateNumbers();
 }
 
-function updateExplorer(){
-
-    files.innerHTML = "";
-
-    Object.keys(projectFiles).forEach(name => {
-
-        let item =
-            document.createElement("div");
-
-        item.className =
-            "file" +
-            (name === currentName
-                ? " active"
-                : "");
-
-        item.textContent =
-            "📄 " + name;
-
-        item.onclick = () => {
-
-            saveMemory();
-
-            currentName = name;
-
-            editor.value =
-                projectFiles[name];
-
-            updateLanguage();
-            updateLines();
-            updateExplorer();
-            updateTabs();
-        };
-
-        files.appendChild(item);
-    });
-}
-
-function saveMemory(){
-
-    if(currentName){
-        projectFiles[currentName] =
-            editor.value;
-    }
+function redo(){
+ document.execCommand("redo");
+ updateNumbers();
 }
 
 function newFile(){
 
-    let name =
-        prompt(
-            "Nama file baru:",
-            "main.py"
-        );
+ let name=prompt("Nama file:","main.py");
 
-    if(!name){
-        return;
-    }
+ if(!name)return;
 
-    name = name.trim();
+ if(!name.endsWith(".py"))
+   name+=".py";
 
-    if(!name){
-        return;
-    }
+ files[name]="";
 
-    if(projectFiles[name] !== undefined){
+ filename.value=name;
+ editor.value="";
 
-        alert("File sudah ada.");
-
-        currentName = name;
-        editor.value =
-            projectFiles[name];
-
-    }else{
-
-        projectFiles[name] = "";
-
-        currentName = name;
-
-        editor.value = "";
-    }
-
-    updateLanguage();
-    updateLines();
-    updateExplorer();
-    updateTabs();
-
-    editor.focus();
+ updateNumbers();
 }
 
-function save(){
+function saveFile(){
 
-    saveMemory();
+ files[filename.value]=editor.value;
 
-    Android.saveFile(
-        currentName,
-        projectFiles[currentName] || ""
-    );
+ Android.saveFile(
+   filename.value,
+   editor.value
+ );
 }
 
 function saveAs(){
 
-    saveMemory();
+ let name=prompt(
+   "Simpan sebagai:",
+   filename.value
+ );
 
-    let name =
-        prompt(
-            "Nama file:",
-            currentName
-        );
+ if(!name)return;
 
-    if(!name){
-        return;
-    }
+ if(!name.endsWith(".py"))
+   name+=".py";
 
-    name = name.trim();
+ filename.value=name;
 
-    if(!name){
-        return;
-    }
+ files[name]=editor.value;
 
-    currentName = name;
-
-    projectFiles[currentName] =
-        editor.value;
-
-    updateLanguage();
-    updateExplorer();
-    updateTabs();
-
-    Android.saveAs(
-        currentName,
-        editor.value
-    );
+ Android.saveAs(
+   name,
+   editor.value
+ );
 }
 
-function terminalPrint(text, cls){
+window.openFromAndroid=function(name,content){
 
-    let div =
-        document.createElement("div");
+ filename.value=name;
+ editor.value=content;
 
-    if(cls){
-        div.className = cls;
-    }
+ files[name]=content;
 
-    div.textContent = text;
+ updateNumbers();
 
-    terminal.appendChild(div);
+ log("Opened: "+name);
+};
 
-    terminal.scrollTop =
-        terminal.scrollHeight;
+window.savedFromAndroid=function(){
+ log("Saved: "+filename.value);
+};
+
+function log(text){
+
+ output.innerHTML+=
+   String(text)
+   .replace(/&/g,"&amp;")
+   .replace(/</g,"&lt;")
+   .replace(/>/g,"&gt;")
+   .replace(/\n/g,"<br>")+
+   "<br>";
+
+ output.scrollTop=output.scrollHeight;
 }
 
-function clearTerminal(){
-
-    terminal.innerHTML = "";
-
-}
+window.onPythonOutput=function(text){
+ log(text);
+};
 
 async function runCode(){
 
-    saveMemory();
+ output.innerHTML="";
 
-    clearTerminal();
+ log(">>> "+filename.value);
+ log(">>> Running...");
 
-    terminalPrint(
-        "$ run " + currentName,
-        "prompt"
-    );
+ try{
 
-    if(currentLanguage === "html"){
+   if(!window.runMicroPython){
 
-        terminalPrint(
-            "Opening HTML Preview..."
-        );
+     log("Python runtime belum siap.");
 
-        Android.showHtml(
-            editor.value
-        );
+     return;
+   }
 
-        return;
-    }
+   await window.runMicroPython(
+     editor.value
+   );
 
-    if(currentLanguage === "css"){
+   log(">>> Process finished");
 
-        terminalPrint(
-            "CSS file tidak bisa dijalankan sendiri."
-        );
+ }catch(e){
 
-        terminalPrint(
-            "Buat index.html untuk preview CSS."
-        );
+   log("ERROR: "+e);
 
-        return;
-    }
-
-    if(currentLanguage === "javascript"){
-
-        try{
-
-            let output = [];
-
-            let oldLog =
-                console.log;
-
-            console.log = function(){
-
-                let text =
-                    Array.from(arguments)
-                    .join(" ");
-
-                output.push(text);
-            };
-
-            let result =
-                eval(editor.value);
-
-            console.log =
-                oldLog;
-
-            output.forEach(x =>
-                terminalPrint(x)
-            );
-
-            if(result !== undefined){
-
-                terminalPrint(
-                    String(result)
-                );
-            }
-
-            terminalPrint(
-                "Process finished."
-            );
-
-        }catch(e){
-
-            terminalPrint(
-                String(e),
-                "error"
-            );
-        }
-
-        return;
-    }
-
-    if(currentLanguage === "python"){
-
-        await runPython();
-
-        return;
-    }
-
-    terminalPrint(
-        "Runtime untuk " +
-        currentLanguage +
-        " belum tersedia."
-    );
-
-    terminalPrint(
-        "File tetap bisa diedit dan disimpan."
-    );
+ }
 }
 
-let pyodide = null;
-let pythonLoading = false;
+editor.addEventListener("input",updateNumbers);
 
-async function loadPython(){
+editor.addEventListener("scroll",()=>{
+ numbers.scrollTop=editor.scrollTop;
+});
 
-    if(pyodide){
-        return pyodide;
-    }
+editor.addEventListener("keydown",function(e){
 
-    if(pythonLoading){
+ if(e.key==="Tab"){
+   e.preventDefault();
+   insert("    ");
+ }
 
-        while(pythonLoading){
-            await new Promise(
-                r => setTimeout(r,100)
-            );
-        }
+ if(e.key==="("){
+   e.preventDefault();
+   pair("()");
+ }
 
-        return pyodide;
-    }
+ if(e.key==="["){
+   e.preventDefault();
+   pair("[]");
+ }
 
-    pythonLoading = true;
+ if(e.key==="{"){
+   e.preventDefault();
+   pair("{}");
+ }
 
-    terminalPrint(
-        "Loading Python runtime..."
-    );
+ if(e.key==='"'){
+   e.preventDefault();
+   pair('""');
+ }
 
-    try{
+ if(e.key==="Enter"){
 
-        const script =
-            document.createElement("script");
+   const pos=editor.selectionStart;
 
-        script.src =
-            "pyodide/pyodide.js";
+   const before=
+     editor.value.substring(0,pos);
 
-        document.head.appendChild(script);
+   const line=
+     before.split("\n").pop();
 
-        await new Promise(
-            (resolve,reject) => {
+   const indent=
+     line.match(/^\s*/)[0];
 
-                script.onload = resolve;
-                script.onerror = reject;
-            }
-        );
+   setTimeout(()=>{
+     insert(indent);
+   },0);
+ }
 
-        pyodide =
-            await loadPyodide({
-                indexURL:
-                    "pyodide/"
-            });
+});
 
-        pyodide.setStdout({
-            batched: text => {
-                terminalPrint(text);
-            }
-        });
+editor.value=files["main.py"];
 
-        pyodide.setStderr({
-            batched: text => {
-                terminalPrint(
-                    text,
-                    "error"
-                );
-            }
-        });
+updateNumbers();
 
-        terminalPrint(
-            "Python ready."
-        );
+</script>
 
-        return pyodide;
-
-    }catch(e){
-
-        terminalPrint(
-            "Python runtime gagal dimuat: " +
-            e,
-            "error"
-        );
-
-        pythonLoading = false;
-
-        throw e;
-    }
-}
-
-async function runPython(){
-
-    try{
-
-        let py =
-            await loadPython();
-
-        terminalPrint(
-            "$ python " +
-            currentName,
-            "prompt"
-        );
-
-        await py.runPythonAsync(
-            editor.value
-        );
-
-        terminalPrint(
-            "Process finished."
-        );
-
-    }catch(e){
-
-        terminalPrint(
-            String(e),
-            "error"
-        );
-    }
-}
-
-editor.addEventListener(
-    "input",
-    () => {
-
-        updateLines();
-
-        saveMemory();
-    }
-);
-
-editor.addEventListener(
-    "scroll",
-    () => {
-
-        lineNumbers.scrollTop =
-            editor.scrollTop;
-    }
-);
-
-editor.addEventListener(
-    "keydown",
-    event => {
-
-        if(event.key === "Tab"){
-
-            event.preventDefault();
-
-            let start =
-                editor.selectionStart;
-
-            let end =
-                editor.selectionEnd;
-
-            editor.value =
-                editor.value.substring(
-                    0,
-                    start
-                ) +
-                "    " +
-                editor.value.substring(
-                    end
-                );
-
-            editor.selectionStart =
-                editor.selectionEnd =
-                start + 4;
-
-            updateLines();
-            saveMemory();
-        }
-
-        if(event.key === "("){
-
-            insertPair("(", ")");
-            event.preventDefault();
-        }
-
-        if(event.key === "["){
-
-            insertPair("[", "]");
-            event.preventDefault();
-        }
-
-        if(event.key === "{"){
-
-            insertPair("{", "}");
-            event.preventDefault();
-        }
-
-        if(event.key === "\""){
-
-            insertPair("\"", "\"");
-            event.preventDefault();
-        }
-
-        if(event.key === "'"){
-
-            insertPair("'", "'");
-            event.preventDefault();
-        }
-    }
-);
-
-function insertPair(a,b){
-
-    let start =
-        editor.selectionStart;
-
-    let end =
-        editor.selectionEnd;
-
-    let selected =
-        editor.value.substring(
-            start,
-            end
-        );
-
-    editor.value =
-        editor.value.substring(
-            0,
-            start
-        ) +
-        a +
-        selected +
-        b +
-        editor.value.substring(
-            end
-        );
-
-    editor.selectionStart =
-        start + 1;
-
-    editor.selectionEnd =
-        end + 1;
-
-    updateLines();
-    saveMemory();
-}
-
-window.openFromAndroid =
-function(name,content){
-
-    currentName = name;
-
-    projectFiles[name] =
-        content;
-
-    editor.value =
-        content;
-
-    updateLanguage();
-    updateLines();
-    updateExplorer();
-    updateTabs();
-
-    Android.toast(
-        "File dibuka"
-    );
-};
-
-window.savedFromAndroid =
-function(){
-
-    Android.toast(
-        "Tersimpan"
-    );
-};
-
-projectFiles["untitled.txt"] = "";
-
-updateLanguage();
-updateLines();
-updateExplorer();
-updateTabs();
-
+<script type="module">
+import "./micropython/micropython.mjs";
 </script>
 
 </body>

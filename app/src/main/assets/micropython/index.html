@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>MicroPython</title>
+</head>
+<body>
+<script type="module">
+import { loadMicroPython } from "./micropython.mjs";
+
+window.mpReady = false;
+
+window.mpPromise = loadMicroPython({
+    stdout: (text) => {
+        if (window.onPythonOutput) window.onPythonOutput(text);
+    },
+    stderr: (text) => {
+        if (window.onPythonOutput) window.onPythonOutput(text);
+    }
+}).then(mp => {
+    window.mp = mp;
+    window.mpReady = true;
+    return mp;
+});
+
+window.runMicroPython = async function(code) {
+    const mp = await window.mpPromise;
+    return await mp.runPythonAsync(code);
+};
+</script>
+</body>
+</html>
