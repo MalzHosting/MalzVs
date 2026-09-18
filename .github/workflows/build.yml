@@ -25,55 +25,17 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.2"
-
       - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK
         run: |
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-          echo "ANDROID_HOME=$ANDROID_HOME"
-
-          if [ -z "$ANDROID_SDK_ROOT" ]; then
-            export ANDROID_SDK_ROOT="$HOME/android-sdk"
-            export ANDROID_HOME="$ANDROID_SDK_ROOT"
-          fi
-
-          mkdir -p "$ANDROID_SDK_ROOT"
-
-          SDKMANAGER=""
-          for p in \
-            "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" \
-            "$ANDROID_SDK_ROOT/cmdline-tools/bin/sdkmanager" \
-            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
-            "/usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager" \
-            "/usr/local/lib/android/sdk/cmdline-tools/16.0/bin/sdkmanager"
-          do
-            if [ -x "$p" ]; then
-              SDKMANAGER="$p"
-              break
-            fi
-          done
-
-          if [ -z "$SDKMANAGER" ]; then
-            echo "sdkmanager tidak ditemukan"
-            find "$HOME" /usr/local/lib/android/sdk -name sdkmanager -type f 2>/dev/null | head -20
-            exit 1
-          fi
-
-          echo "SDKMANAGER=$SDKMANAGER"
-
-          "$SDKMANAGER" --sdk_root="$ANDROID_SDK_ROOT" \
-            "platform-tools" \
-            "platforms;android-34" \
-            "build-tools;34.0.0"
-
-          yes | "$SDKMANAGER" --sdk_root="$ANDROID_SDK_ROOT" --licenses || true
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          yes | sdkmanager --licenses || true
 
       - name: Build MalzPy
         run: |
-          gradle assembleDebug --no-daemon --stacktrace
+          gradle assembleDebug --no-daemon --console=plain --stacktrace
 
       - name: Check APK
         run: |
@@ -84,7 +46,6 @@ jobs:
             exit 1
           fi
 
-          echo "APK:"
           ls -lh "$APK"
 
           SIZE=$(stat -c%s "$APK")
@@ -96,8 +57,6 @@ jobs:
             echo "APK >= 100 MB"
             exit 1
           fi
-
-          echo "APK < 100 MB"
 
       - name: Upload MalzPy APK
         uses: actions/upload-artifact@v4
