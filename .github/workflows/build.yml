@@ -52,9 +52,15 @@ jobs:
 
           yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --licenses || true
 
+      - name: Setup Gradle 8.2
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.2"
+
       - name: Build MalzPy
         run: |
           set -o pipefail
+          gradle --version
           gradle assembleDebug --no-daemon --console=plain --stacktrace 2>&1 | tee build-output.log
 
       - name: Show Build Error
