@@ -40,6 +40,8 @@ jobs:
 
           cd ports/webassembly
 
+          make submodules
+
           make
 
           mkdir -p "$GITHUB_WORKSPACE/app/src/main/assets/micropython"
