@@ -275,7 +275,7 @@ public class MainActivity extends Activity {
         b.setOnClickListener(v -> {
 
             if (value.equals("undo")) {
-                editor.undoText();
+                editor.undo();
                 return;
             }
 
@@ -813,8 +813,8 @@ private void showEditor() {
                     if (which == 0) newFile();
                     if (which == 1) openFile();
                     if (which == 2) saveFile();
-                    if (which == 3) editor.undoText();
-                    if (which == 4) editor.redoText();
+                    if (which == 3) editor.undo();
+                    if (which == 4) editor.redo();
 
                 })
                 .show();
