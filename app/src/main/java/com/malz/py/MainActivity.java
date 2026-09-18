@@ -2,25 +2,31 @@ package com.malz.py;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
+import android.text.Editable;
+import android.text.Spannable;
+import android.text.Spanned;
+import android.text.TextWatcher;
+import android.text.style.ForegroundColorSpan;
 import android.view.Gravity;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
-import android.content.Context;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.PopupWindow;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.chaquo.python.android.AndroidPlatform;
+import com.chaquo.python.AndroidPlatform;
 import com.chaquo.python.PyObject;
 import com.chaquo.python.Python;
 
@@ -28,6 +34,10 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -35,34 +45,93 @@ public class MainActivity extends Activity {
 
     private CodeEditor editor;
     private TextView lineNumbers;
-    private TextView terminal;
     private TextView filename;
+
+    private LinearLayout editorPage;
+    private LinearLayout terminalPage;
+
+    private TextView terminalOutput;
+    private EditText terminalInput;
+    private TextView inputPrompt;
+    private TextView terminalStatus;
+
     private Button runButton;
 
-    private Uri currentUri = null;
+    private Uri currentUri;
     private String currentFile = "untitled.py";
 
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final ExecutorService executor =
+            Executors.newSingleThreadExecutor();
+
     private volatile boolean pythonReady = false;
 
-    private int dp(float value) {
-        return (int)(value * getResources().getDisplayMetrics().density + 0.5f);
+    private InputProvider inputProvider;
+
+    private PopupWindow suggestionPopup;
+    private ListView suggestionList;
+
+    private final String[] suggestions = {
+            "print",
+            "input",
+            "import",
+            "from",
+            "def",
+            "class",
+            "if",
+            "elif",
+            "else",
+            "for",
+            "while",
+            "try",
+            "except",
+            "finally",
+            "with",
+            "return",
+            "break",
+            "continue",
+            "pass",
+            "raise",
+            "True",
+            "False",
+            "None",
+            "and",
+            "or",
+            "not",
+            "in",
+            "is",
+            "len",
+            "range",
+            "str",
+            "int",
+            "float",
+            "list",
+            "dict",
+            "set",
+            "tuple",
+            "open"
+    };
+
+    private int dp(float v) {
+        return (int)(v *
+                getResources().getDisplayMetrics().density + 0.5f);
     }
 
-    private TextView text(String value, float size, int color) {
+    private TextView tv(String s, float size, int color) {
         TextView t = new TextView(this);
-        t.setText(value);
+        t.setText(s);
         t.setTextSize(size);
         t.setTextColor(color);
         return t;
     }
 
-    private Button button(String value) {
+    private Button btn(String s) {
         Button b = new Button(this);
-        b.setText(value);
-        b.setTextSize(12);
+        b.setText(s);
         b.setTextColor(Color.WHITE);
+        b.setTextSize(12);
         b.setAllCaps(false);
+        b.setMinHeight(0);
+        b.setMinimumHeight(0);
         return b;
     }
 
@@ -70,188 +139,435 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle state) {
         super.onCreate(state);
 
-        buildUi();
+        getWindow().setStatusBarColor(Color.rgb(17, 17, 17));
+        getWindow().setNavigationBarColor(Color.BLACK);
+
+        inputProvider = new InputProvider(
+                prompt -> runOnUiThread(() -> showTerminalInput(prompt))
+        );
+
+        buildEditorPage();
+        buildTerminalPage();
+
+        showEditor();
+
         initPython();
     }
 
-    private void buildUi() {
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(Color.rgb(9, 11, 15));
+    private void buildEditorPage() {
 
-        LinearLayout header = new LinearLayout(this);
-        header.setOrientation(LinearLayout.HORIZONTAL);
-        header.setGravity(Gravity.CENTER_VERTICAL);
-        header.setPadding(dp(10), dp(4), dp(6), dp(4));
-        header.setBackgroundColor(Color.rgb(13, 16, 21));
+        editorPage = new LinearLayout(this);
+        editorPage.setOrientation(LinearLayout.VERTICAL);
+        editorPage.setBackgroundColor(Color.rgb(48, 48, 48));
 
-        TextView logo = text("M", 25, Color.rgb(255, 212, 59));
-        logo.setTypeface(Typeface.DEFAULT_BOLD);
+        LinearLayout top = new LinearLayout(this);
+        top.setOrientation(LinearLayout.HORIZONTAL);
+        top.setGravity(Gravity.CENTER_VERTICAL);
+        top.setPadding(dp(8), 0, dp(8), 0);
+        top.setBackgroundColor(Color.rgb(43, 43, 43));
 
-        filename = text(currentFile, 15, Color.WHITE);
-        filename.setTypeface(Typeface.MONOSPACE);
+        TextView back = tv("‹", 38, Color.WHITE);
+        back.setGravity(Gravity.CENTER);
+        top.addView(back, new LinearLayout.LayoutParams(dp(42), dp(70)));
 
-        header.addView(logo, new LinearLayout.LayoutParams(dp(38), dp(52)));
-        header.addView(filename, new LinearLayout.LayoutParams(0, dp(52), 1));
+        LinearLayout titleBox = new LinearLayout(this);
+        titleBox.setOrientation(LinearLayout.VERTICAL);
+        titleBox.setGravity(Gravity.CENTER_VERTICAL);
 
-        root.addView(header);
+        TextView title = tv("Coding Python", 22, Color.WHITE);
+        title.setTypeface(Typeface.DEFAULT_BOLD);
 
-        HorizontalScrollView actionsScroll = new HorizontalScrollView(this);
-        actionsScroll.setHorizontalScrollBarEnabled(false);
+        filename = tv(currentFile, 13, Color.LTGRAY);
 
-        LinearLayout actions = new LinearLayout(this);
-        actions.setGravity(Gravity.CENTER_VERTICAL);
-        actions.setPadding(dp(5), 0, dp(5), 0);
+        titleBox.addView(title);
+        titleBox.addView(filename);
 
-        Button newButton = button("NEW");
-        Button openButton = button("OPEN");
-        Button saveButton = button("SAVE");
-        runButton = button("RUN");
-        Button undoButton = button("↶");
-        Button redoButton = button("↷");
+        top.addView(titleBox,
+                new LinearLayout.LayoutParams(0, dp(70), 1));
 
-        actions.addView(newButton);
-        actions.addView(openButton);
-        actions.addView(saveButton);
-        actions.addView(runButton);
-        actions.addView(undoButton);
-        actions.addView(redoButton);
+        runButton = btn("RUN");
+        runButton.setTextSize(15);
+        runButton.setTypeface(Typeface.DEFAULT_BOLD);
 
-        actionsScroll.addView(actions);
-        root.addView(actionsScroll, new LinearLayout.LayoutParams(-1, dp(50)));
+        Button menu = btn("MENU");
+        menu.setTextSize(15);
 
-        newButton.setOnClickListener(v -> newFile());
-        openButton.setOnClickListener(v -> openFile());
-        saveButton.setOnClickListener(v -> saveFile());
-        runButton.setOnClickListener(v -> runPython());
-        undoButton.setOnClickListener(v -> editor.undoText());
-        redoButton.setOnClickListener(v -> editor.redoText());
+        top.addView(runButton,
+                new LinearLayout.LayoutParams(dp(72), dp(70)));
 
-        LinearLayout editorArea = new LinearLayout(this);
-        editorArea.setOrientation(LinearLayout.HORIZONTAL);
-        editorArea.setBackgroundColor(Color.rgb(18, 21, 27));
+        top.addView(menu,
+                new LinearLayout.LayoutParams(dp(72), dp(70)));
 
-        lineNumbers = text("1", 14, Color.rgb(100, 108, 120));
+        editorPage.addView(top);
+
+        LinearLayout codeArea = new LinearLayout(this);
+        codeArea.setOrientation(LinearLayout.HORIZONTAL);
+        codeArea.setBackgroundColor(Color.rgb(48, 48, 48));
+
+        lineNumbers = tv("1", 14, Color.rgb(130, 130, 130));
         lineNumbers.setTypeface(Typeface.MONOSPACE);
         lineNumbers.setGravity(Gravity.TOP | Gravity.RIGHT);
-        lineNumbers.setPadding(dp(5), dp(10), dp(8), dp(20));
-        lineNumbers.setBackgroundColor(Color.rgb(13, 16, 21));
+        lineNumbers.setPadding(0, dp(11), dp(8), dp(20));
+        lineNumbers.setBackgroundColor(Color.rgb(45, 45, 45));
+
+        codeArea.addView(lineNumbers,
+                new LinearLayout.LayoutParams(dp(40), -1));
 
         editor = new CodeEditor(this);
 
-        editorArea.addView(lineNumbers,
-                new LinearLayout.LayoutParams(dp(45), -1));
+        codeArea.addView(editor,
+                new LinearLayout.LayoutParams(0, 0, 1));
 
-        editorArea.addView(editor,
-                new LinearLayout.LayoutParams(0, -1, 1));
-
-        root.addView(editorArea,
+        editorPage.addView(codeArea,
                 new LinearLayout.LayoutParams(-1, 0, 1));
 
-        editor.addTextChangedListener(new android.text.TextWatcher() {
-            public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
-            public void onTextChanged(CharSequence s, int st, int b, int c) {
-                updateLineNumbers();
-            }
-            public void afterTextChanged(android.text.Editable e) {}
-        });
+        LinearLayout toolbar = new LinearLayout(this);
+        toolbar.setOrientation(LinearLayout.HORIZONTAL);
+        toolbar.setGravity(Gravity.CENTER_VERTICAL);
+        toolbar.setBackgroundColor(Color.rgb(43, 43, 43));
 
-        LinearLayout terminalHeader = new LinearLayout(this);
-        terminalHeader.setGravity(Gravity.CENTER_VERTICAL);
-        terminalHeader.setPadding(dp(10), 0, dp(10), 0);
-        terminalHeader.setBackgroundColor(Color.rgb(13, 16, 21));
+        addTool(toolbar, "Tab", "    ");
+        addTool(toolbar, "{}", "{}");
+        addTool(toolbar, "\"\"", "\"\"");
+        addTool(toolbar, ";", ";");
+        addTool(toolbar, "↶", "undo");
+        addTool(toolbar, "⇧", "up");
+        addTool(toolbar, "⇩", "down");
+        addTool(toolbar, "⇨", "right");
 
-        TextView terminalTitle = text("TERMINAL", 12, Color.rgb(255, 212, 59));
-        terminalHeader.addView(terminalTitle,
-                new LinearLayout.LayoutParams(0, dp(34), 1));
+        editorPage.addView(toolbar,
+                new LinearLayout.LayoutParams(-1, dp(55)));
 
-        Button clear = button("CLEAR");
-        terminalHeader.addView(clear);
+        runButton.setOnClickListener(v -> runPython());
 
-        root.addView(terminalHeader);
+        back.setOnClickListener(v -> finish());
 
-        terminal = text("MalzPy Python ready.\n", 13, Color.rgb(210, 214, 220));
-        terminal.setTypeface(Typeface.MONOSPACE);
-        terminal.setPadding(dp(10), dp(8), dp(10), dp(8));
-        terminal.setBackgroundColor(Color.rgb(7, 9, 12));
-
-        ScrollView terminalScroll = new ScrollView(this);
-        terminalScroll.addView(terminal);
-        root.addView(terminalScroll,
-                new LinearLayout.LayoutParams(-1, dp(145)));
-
-        clear.setOnClickListener(v -> terminal.setText(""));
-
-        setContentView(root);
-        updateLineNumbers();
+        menu.setOnClickListener(v -> showMenu());
     }
 
-    private void updateLineNumbers() {
-        if (lineNumbers == null || editor == null) return;
+    private void addTool(LinearLayout bar, String label, String value) {
 
-        String value = editor.getText().toString();
-        int count = 1;
+        Button b = btn(label);
+        b.setTextSize(17);
 
-        for (int i = 0; i < value.length(); i++) {
-            if (value.charAt(i) == '\n') count++;
+        bar.addView(b,
+                new LinearLayout.LayoutParams(
+                        0, dp(55), 1));
+
+        b.setOnClickListener(v -> {
+
+            if (value.equals("undo")) {
+                editor.undoText();
+                return;
+            }
+
+            if (value.equals("up")) {
+                moveCursor(-1);
+                return;
+            }
+
+            if (value.equals("down")) {
+                moveCursor(1);
+                return;
+            }
+
+            if (value.equals("right")) {
+                moveCursorRight();
+                return;
+            }
+
+            int pos = editor.getSelectionStart();
+            editor.getText().insert(pos, value);
+        });
+    }
+
+    private void moveCursor(int direction) {
+        int pos = editor.getSelectionStart();
+
+        try {
+            int target = editor.getLayout().getOffsetForHorizontal(
+                    editor.getLayout().getLineForOffset(pos) + direction,
+                    0
+            );
+
+            editor.setSelection(
+                    Math.max(0, Math.min(target, editor.length()))
+            );
+        } catch (Exception ignored) {
         }
+    }
 
-        StringBuilder sb = new StringBuilder();
+    private void moveCursorRight() {
+        int p = editor.getSelectionStart();
+        if (p < editor.length()) editor.setSelection(p + 1);
+    }
 
-        for (int i = 1; i <= count; i++) {
-            sb.append(i);
-            if (i < count) sb.append('\n');
-        }
+    private void buildTerminalPage() {
 
-        lineNumbers.setText(sb.toString());
+        terminalPage = new LinearLayout(this);
+        terminalPage.setOrientation(LinearLayout.VERTICAL);
+        terminalPage.setBackgroundColor(Color.rgb(8, 10, 13));
+
+        LinearLayout header = new LinearLayout(this);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        header.setPadding(dp(10), 0, dp(5), 0);
+        header.setBackgroundColor(Color.rgb(43, 43, 43));
+
+        Button back = btn("‹");
+        back.setTextSize(32);
+
+        TextView title = tv("Terminal", 20, Color.WHITE);
+        title.setTypeface(Typeface.DEFAULT_BOLD);
+
+        header.addView(back,
+                new LinearLayout.LayoutParams(dp(55), dp(62)));
+
+        header.addView(title,
+                new LinearLayout.LayoutParams(0, dp(62), 1));
+
+        terminalStatus = tv("RUNNING", 13, Color.rgb(255, 212, 59));
+        header.addView(terminalStatus,
+                new LinearLayout.LayoutParams(dp(85), dp(62)));
+
+        terminalPage.addView(header);
+
+        terminalOutput = tv("", 14, Color.rgb(225, 225, 225));
+        terminalOutput.setTypeface(Typeface.MONOSPACE);
+        terminalOutput.setGravity(Gravity.TOP);
+        terminalOutput.setPadding(dp(12), dp(12), dp(12), dp(12));
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(terminalOutput);
+
+        terminalPage.addView(scroll,
+                new LinearLayout.LayoutParams(-1, 0, 1));
+
+        LinearLayout inputBox = new LinearLayout(this);
+        inputBox.setOrientation(LinearLayout.VERTICAL);
+        inputBox.setPadding(dp(10), dp(6), dp(10), dp(8));
+        inputBox.setBackgroundColor(Color.rgb(25, 27, 31));
+        inputBox.setVisibility(View.GONE);
+
+        inputPrompt = tv("", 14, Color.rgb(255, 212, 59));
+
+        terminalInput = new EditText(this);
+        terminalInput.setSingleLine(true);
+        terminalInput.setTextColor(Color.WHITE);
+        terminalInput.setHintTextColor(Color.GRAY);
+        terminalInput.setTextSize(15);
+        terminalInput.setHint("ketik input lalu Enter");
+        terminalInput.setBackgroundColor(Color.rgb(40, 43, 48));
+
+        inputBox.addView(inputPrompt);
+        inputBox.addView(terminalInput,
+                new LinearLayout.LayoutParams(-1, dp(50)));
+
+        terminalPage.addView(inputBox,
+                new LinearLayout.LayoutParams(-1, dp(85)));
+
+        terminalInput.setOnEditorActionListener((v, action, event) -> {
+            submitTerminalInput();
+            return true;
+        });
+
+        terminalInput.setOnKeyListener((v, keyCode, event) -> {
+            if (keyCode == android.view.KeyEvent.KEYCODE_ENTER &&
+                    event.getAction() == android.view.KeyEvent.ACTION_DOWN) {
+                submitTerminalInput();
+                return true;
+            }
+            return false;
+        });
+
+        back.setOnClickListener(v -> {
+            inputProvider.cancel();
+            showEditor();
+        });
+
+        inputBox.setTag("inputBox");
+    }
+
+    private void showTerminalInput(String prompt) {
+
+        inputPrompt.setText(prompt);
+
+        LinearLayout inputBox =
+                (LinearLayout)terminalInput.getParent();
+
+        inputBox.setVisibility(View.VISIBLE);
+
+        terminalStatus.setText("WAITING INPUT");
+
+        terminalInput.setText("");
+        terminalInput.requestFocus();
+
+        InputMethodManager imm =
+                (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
+
+        imm.showSoftInput(
+                terminalInput,
+                InputMethodManager.SHOW_IMPLICIT
+        );
+    }
+
+    private void submitTerminalInput() {
+
+        String value = terminalInput.getText().toString();
+
+        appendTerminal(value + "\n");
+
+        LinearLayout inputBox =
+                (LinearLayout)terminalInput.getParent();
+
+        inputBox.setVisibility(View.GONE);
+
+        terminalStatus.setText("RUNNING");
+
+        InputMethodManager imm =
+                (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
+
+        imm.hideSoftInputFromWindow(
+                terminalInput.getWindowToken(), 0);
+
+        inputProvider.submit(value);
+    }
+
+    private void showEditor() {
+        setContentView(editorPage);
+    }
+
+    private void showTerminal() {
+        setContentView(terminalPage);
+    }
+
+    private void appendTerminal(String text) {
+        terminalOutput.append(text);
     }
 
     private void initPython() {
+
         runButton.setEnabled(false);
 
         executor.execute(() -> {
             try {
+
                 if (!Python.isStarted()) {
                     Python.start(new AndroidPlatform(this));
                 }
 
                 Python.getInstance();
-
                 pythonReady = true;
 
                 runOnUiThread(() -> {
                     runButton.setEnabled(true);
-                    terminal.append("Python runtime siap (offline).\n");
                 });
 
             } catch (Exception e) {
+
+                runOnUiThread(() ->
+                        Toast.makeText(
+                                this,
+                                "Python gagal dimuat: " + e.getMessage(),
+                                Toast.LENGTH_LONG
+                        ).show()
+                );
+            }
+        });
+    }
+
+    private void runPython() {
+
+        if (!pythonReady) {
+            Toast.makeText(
+                    this,
+                    "Python masih dimuat...",
+                    Toast.LENGTH_SHORT
+            ).show();
+            return;
+        }
+
+        String code = editor.getText().toString();
+
+        terminalOutput.setText("");
+        appendTerminal("MalzPy Terminal\n");
+        appendTerminal("--------------------\n");
+        appendTerminal("Running " + currentFile + "\n\n");
+
+        showTerminal();
+
+        executor.execute(() -> {
+
+            try {
+
+                Python py = Python.getInstance();
+
+                PyObject runner =
+                        py.getModule("runner");
+
+                PyObject result =
+                        runner.callAttr(
+                                "run",
+                                code,
+                                inputProvider
+                        );
+
+                String output =
+                        result.toJava(String.class);
+
                 runOnUiThread(() -> {
-                    terminal.append("Python gagal dimuat:\n" +
-                            e.getMessage() + "\n");
+
+                    appendTerminal(output);
+
+                    if (!output.endsWith("\n")) {
+                        appendTerminal("\n");
+                    }
+
+                    appendTerminal("\n[program selesai]\n");
+                    terminalStatus.setText("DONE");
+                });
+
+            } catch (Exception e) {
+
+                runOnUiThread(() -> {
+
+                    appendTerminal(
+                            "\nERROR:\n" +
+                            e.toString() +
+                            "\n"
+                    );
+
+                    terminalStatus.setText("ERROR");
                 });
             }
         });
     }
 
     private void newFile() {
-        final EditText input = new EditText(this);
-        input.setHint("nama file, contoh: main.py");
-        input.setSingleLine(true);
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("New Python File")
-                .setMessage("Masukkan nama file baru")
-                .setView(input)
-                .setNegativeButton("BATAL", null)
-                .setPositiveButton("BUAT", null)
-                .create();
+        EditText input = new EditText(this);
+        input.setSingleLine(true);
+        input.setHint("contoh: main.py");
+
+        AlertDialog dialog =
+                new AlertDialog.Builder(this)
+                        .setTitle("New Python File")
+                        .setMessage("Nama file baru")
+                        .setView(input)
+                        .setNegativeButton("BATAL", null)
+                        .setPositiveButton("BUAT", null)
+                        .create();
 
         dialog.setOnShowListener(v -> {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(x -> {
-                String name = input.getText().toString().trim();
+
+            dialog.getButton(
+                    AlertDialog.BUTTON_POSITIVE
+            ).setOnClickListener(x -> {
+
+                String name =
+                        input.getText().toString().trim();
 
                 if (name.isEmpty()) {
-                    input.setError("Nama file wajib diisi");
+                    input.setError("Masukkan nama file");
                     return;
                 }
 
@@ -259,18 +575,13 @@ public class MainActivity extends Activity {
                     name += ".py";
                 }
 
-                currentUri = null;
                 currentFile = name;
+                currentUri = null;
+
                 filename.setText(name);
                 editor.setCode("");
-                terminal.setText("File baru: " + name + "\n");
 
                 dialog.dismiss();
-
-                editor.requestFocus();
-                InputMethodManager imm =
-                        (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
-                imm.showSoftInput(editor, InputMethodManager.SHOW_IMPLICIT);
             });
         });
 
@@ -278,149 +589,203 @@ public class MainActivity extends Activity {
     }
 
     private void openFile() {
-        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("text/x-python");
-        startActivityForResult(intent, 100);
+
+        Intent i =
+                new Intent(Intent.ACTION_OPEN_DOCUMENT);
+
+        i.addCategory(Intent.CATEGORY_OPENABLE);
+        i.setType("text/x-python");
+
+        startActivityForResult(i, 100);
     }
 
     private void saveFile() {
-        if (currentUri == null) {
-            Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-            intent.addCategory(Intent.CATEGORY_OPENABLE);
-            intent.setType("text/x-python");
-            intent.putExtra(Intent.EXTRA_TITLE, currentFile);
-            startActivityForResult(intent, 101);
-            return;
-        }
 
-        writeFile(currentUri);
+        if (currentUri == null) {
+
+            Intent i =
+                    new Intent(Intent.ACTION_CREATE_DOCUMENT);
+
+            i.addCategory(Intent.CATEGORY_OPENABLE);
+            i.setType("text/x-python");
+
+            i.putExtra(
+                    Intent.EXTRA_TITLE,
+                    currentFile
+            );
+
+            startActivityForResult(i, 101);
+
+        } else {
+            writeFile(currentUri);
+        }
     }
 
     private void writeFile(Uri uri) {
+
         executor.execute(() -> {
+
             try {
-                OutputStream out = getContentResolver().openOutputStream(uri);
 
-                if (out == null) throw new Exception("Tidak bisa membuka file");
+                OutputStream out =
+                        getContentResolver()
+                                .openOutputStream(uri);
 
-                out.write(editor.getText().toString().getBytes(StandardCharsets.UTF_8));
+                if (out == null)
+                    throw new Exception("Tidak bisa membuka file");
+
+                out.write(
+                        editor.getText()
+                                .toString()
+                                .getBytes(StandardCharsets.UTF_8)
+                );
+
                 out.close();
 
                 runOnUiThread(() ->
-                        terminal.append("Saved: " + currentFile + "\n"));
+                        Toast.makeText(
+                                this,
+                                "Saved " + currentFile,
+                                Toast.LENGTH_SHORT
+                        ).show()
+                );
 
             } catch (Exception e) {
+
                 runOnUiThread(() ->
-                        terminal.append("SAVE ERROR: " + e.getMessage() + "\n"));
+                        Toast.makeText(
+                                this,
+                                "SAVE ERROR: " + e.getMessage(),
+                                Toast.LENGTH_LONG
+                        ).show()
+                );
             }
         });
     }
 
     private void loadFile(Uri uri) {
-        executor.execute(() -> {
-            try {
-                BufferedReader reader = new BufferedReader(
-                        new InputStreamReader(
-                                getContentResolver().openInputStream(uri),
-                                StandardCharsets.UTF_8));
 
-                StringBuilder sb = new StringBuilder();
+        executor.execute(() -> {
+
+            try {
+
+                BufferedReader r =
+                        new BufferedReader(
+                                new InputStreamReader(
+                                        getContentResolver()
+                                                .openInputStream(uri),
+                                        StandardCharsets.UTF_8
+                                )
+                        );
+
+                StringBuilder sb =
+                        new StringBuilder();
+
                 String line;
 
-                while ((line = reader.readLine()) != null) {
+                while ((line = r.readLine()) != null) {
                     sb.append(line).append('\n');
                 }
 
-                reader.close();
+                r.close();
 
-                String name = uri.getLastPathSegment();
-                if (name == null || !name.toLowerCase().endsWith(".py")) {
+                String name =
+                        uri.getLastPathSegment();
+
+                if (name == null ||
+                        !name.toLowerCase().endsWith(".py")) {
                     name = "opened.py";
                 }
 
                 final String finalName = name;
 
                 runOnUiThread(() -> {
+
                     currentUri = uri;
                     currentFile = finalName;
+
                     filename.setText(finalName);
                     editor.setCode(sb.toString());
-                    terminal.setText("Opened: " + finalName + "\n");
                 });
 
             } catch (Exception e) {
+
                 runOnUiThread(() ->
-                        terminal.append("OPEN ERROR: " + e.getMessage() + "\n"));
+                        Toast.makeText(
+                                this,
+                                "OPEN ERROR: " + e.getMessage(),
+                                Toast.LENGTH_LONG
+                        ).show()
+                );
             }
         });
     }
 
-    private void runPython() {
-        if (!pythonReady) {
-            Toast.makeText(this, "Python masih dimuat...", Toast.LENGTH_SHORT).show();
-            return;
-        }
+    private void showMenu() {
 
-        final String code = editor.getText().toString();
+        final String[] items = {
+                "NEW",
+                "OPEN",
+                "SAVE",
+                "UNDO",
+                "REDO"
+        };
 
-        terminal.append("\n>>> RUN " + currentFile + "\n");
+        new AlertDialog.Builder(this)
+                .setTitle("MalzPy")
+                .setItems(items, (d, which) -> {
 
-        runButton.setEnabled(false);
+                    if (which == 0) newFile();
+                    if (which == 1) openFile();
+                    if (which == 2) saveFile();
+                    if (which == 3) editor.undoText();
+                    if (which == 4) editor.redoText();
 
-        executor.execute(() -> {
-            try {
-                Python py = Python.getInstance();
-                PyObject runner = py.getModule("runner");
-                PyObject result = runner.callAttr("run", code);
-                String output = result.toJava(String.class);
-
-                runOnUiThread(() -> {
-                    terminal.append(output);
-
-                    if (!output.endsWith("\n")) {
-                        terminal.append("\n");
-                    }
-
-                    terminal.append(">>> selesai\n");
-                    runButton.setEnabled(true);
-                });
-
-            } catch (Exception e) {
-                runOnUiThread(() -> {
-                    terminal.append("RUN ERROR:\n");
-                    terminal.append(e.toString());
-                    terminal.append("\n");
-                    runButton.setEnabled(true);
-                });
-            }
-        });
+                })
+                .show();
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+    protected void onActivityResult(
+            int requestCode,
+            int resultCode,
+            Intent data) {
 
-        if (resultCode != RESULT_OK || data == null || data.getData() == null) {
+        super.onActivityResult(
+                requestCode,
+                resultCode,
+                data
+        );
+
+        if (resultCode != RESULT_OK ||
+                data == null ||
+                data.getData() == null) {
             return;
         }
 
         Uri uri = data.getData();
 
         if (requestCode == 100) {
-            String path = uri.getLastPathSegment();
 
-            if (path == null || !path.toLowerCase().endsWith(".py")) {
-                Toast.makeText(this,
-                        "MalzPy hanya bisa membuka file .py",
-                        Toast.LENGTH_SHORT).show();
+            String name =
+                    uri.getLastPathSegment();
+
+            if (name == null ||
+                    !name.toLowerCase().endsWith(".py")) {
+
+                Toast.makeText(
+                        this,
+                        "Hanya file .py",
+                        Toast.LENGTH_SHORT
+                ).show();
+
                 return;
             }
 
-            currentUri = uri;
             loadFile(uri);
 
         } else if (requestCode == 101) {
+
             currentUri = uri;
             writeFile(uri);
         }
@@ -429,6 +794,8 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+
+        inputProvider.cancel();
         executor.shutdownNow();
     }
 }

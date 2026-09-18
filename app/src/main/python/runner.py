@@ -2,17 +2,17 @@ import io
 import contextlib
 import traceback
 
-def run(code):
+def run(code, provider):
     output = io.StringIO()
     errors = io.StringIO()
 
-    def blocked_input(prompt=""):
-        raise RuntimeError("input() belum didukung di terminal MalzPy")
+    def malz_input(prompt=""):
+        return provider.readLine(str(prompt))
 
     scope = {
         "__name__": "__main__",
         "__file__": "<malzpy>",
-        "input": blocked_input,
+        "input": malz_input,
     }
 
     try:
