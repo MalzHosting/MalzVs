@@ -322,10 +322,17 @@ async function initPython() {
              * lokasi WASM-nya sendiri.
              */
 
+            const moduleUrl =
+                new URL(
+                    "micropython/micropython.mjs",
+                    window.location.href
+                ).href;
+
+            terminal.textContent +=
+                "Loading: " + moduleUrl + "\n";
+
             const module =
-                await import(
-                    "./micropython/micropython.mjs"
-                );
+                await import(moduleUrl);
 
             if (!module.loadMicroPython) {
                 throw new Error(

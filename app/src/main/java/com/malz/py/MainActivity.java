@@ -69,9 +69,7 @@ public class MainActivity extends Activity {
 
         setContentView(webView);
 
-        webView.loadUrl(
-                "https://appassets.androidplatform.net/assets/index.html"
-        );
+        webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
     }
 
     private String getName(Uri uri) {
