@@ -1,33 +1,27 @@
 plugins {
-    id 'com.android.application'
+    id "com.android.application"
+    id "com.chaquo.python"
 }
 
 android {
-    androidResources {
-        noCompress += [
-            "wasm",
-            "data",
-            "zip",
-            "whl",
-            "br",
-            "gz",
-            "bz2",
-            "xz"
-        ]
-    }
-
-    namespace 'com.malz.vs'
+    namespace "com.malz.py"
     compileSdk 34
 
     defaultConfig {
-        applicationId 'com.malz.vs'
+        applicationId "com.malz.py"
         minSdk 23
         targetSdk 34
-        versionCode 2
-        versionName '2.0'
+        versionCode 1
+        versionName "1.0"
+
+        ndk {
+            abiFilters "arm64-v8a"
+        }
     }
 }
 
+python {
+}
+
 dependencies {
-    implementation 'androidx.webkit:webkit:1.12.1'
 }

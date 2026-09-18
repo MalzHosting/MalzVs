@@ -1,4 +1,4 @@
-name: Build MalzPy
+name: Build MalzPy APK
 
 on:
   push:
@@ -7,92 +7,58 @@ on:
   workflow_dispatch:
 
 jobs:
-
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java
+      - name: Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
 
-      - name: Setup Emscripten
-        uses: mymindstorm/setup-emsdk@v14
+      - name: Python 3.11
+        uses: actions/setup-python@v5
         with:
-          version: 3.1.56
-          actions-cache-folder: emsdk-cache
-
-      - name: Build MicroPython WebAssembly
-        run: |
-          git clone --depth 1 --branch v1.23.0 \
-            https://github.com/micropython/micropython.git /tmp/micropython
-
-          cd /tmp/micropython
-
-          make -C mpy-cross
-
-          cd ports/webassembly
-
-          make submodules
-
-          make
-
-          mkdir -p "$GITHUB_WORKSPACE/app/src/main/assets/micropython"
-
-          cp build-standard/micropython.mjs \
-            "$GITHUB_WORKSPACE/app/src/main/assets/micropython/"
-
-          cp build-standard/micropython.wasm \
-            "$GITHUB_WORKSPACE/app/src/main/assets/micropython/"
-
-          ls -lh \
-            "$GITHUB_WORKSPACE/app/src/main/assets/micropython"
+          python-version: "3.11"
 
       - name: Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK
         run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
-            --licenses >/dev/null 2>&1 || true
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          yes | sdkmanager --licenses >/dev/null || true
 
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
-            "platform-tools" \
-            "platforms;android-34" \
-            "build-tools;34.0.0"
-
-      - name: Setup Gradle
+      - name: Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.2'
+          gradle-version: "8.2"
 
       - name: Build APK
-        env:
-          GRADLE_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=1024m"
         run: |
-          gradle assembleDebug \
-            --no-daemon \
-            -Dorg.gradle.jvmargs="-Xmx4096m -XX:MaxMetaspaceSize=1024m"
+          gradle assembleDebug --no-daemon --stacktrace
 
       - name: Check APK size
         run: |
-          ls -lh app/build/outputs/apk/debug/app-debug.apk
+          APK=$(find app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+          ls -lh "$APK"
 
-          SIZE=$(stat -c%s app/build/outputs/apk/debug/app-debug.apk)
+          SIZE=$(stat -c%s "$APK")
+          MAX=$((100 * 1024 * 1024))
 
-          if [ "$SIZE" -gt 73400320 ]; then
-            echo "ERROR: APK lebih dari 70 MB"
+          if [ "$SIZE" -ge "$MAX" ]; then
+            echo "APK lebih dari atau sama dengan 100 MB"
             exit 1
           fi
 
-          echo "APK <= 70 MB"
+          echo "APK di bawah 100 MB"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MalzPy-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: MalzPy
+          path: app/build/outputs/apk/debug/*.apk

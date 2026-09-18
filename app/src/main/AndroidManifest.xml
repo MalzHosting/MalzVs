@@ -1,23 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application
-        android:icon="@drawable/ic_malzpy"
-        android:roundIcon="@drawable/ic_malzpy"
-        android:theme="@style/AppTheme"
-        android:label="MalzCode"
         android:allowBackup="false"
+        android:hardwareAccelerated="true"
+        android:icon="@drawable/ic_malzpy"
+        android:label="MalzPy"
+        android:resizeableActivity="true"
         android:supportsRtl="true"
-        android:usesCleartextTraffic="true">
+        android:theme="@style/AppTheme">
 
         <activity
             android:name=".MainActivity"
-            android:screenOrientation="fullSensor"
             android:configChanges="orientation|screenSize|keyboardHidden"
-            android:exported="true">
+            android:exported="false"
+            android:screenOrientation="fullSensor" />
+
+        <activity
+            android:name=".SplashActivity"
+            android:exported="true"
+            android:screenOrientation="fullSensor"
+            android:theme="@style/SplashTheme">
 
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
         </activity>

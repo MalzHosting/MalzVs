@@ -1,276 +1,434 @@
 package com.malz.py;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
-import android.database.Cursor;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.OpenableColumns;
-import android.webkit.JavascriptInterface;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebResourceResponse;
-import android.webkit.WebView;
-import androidx.webkit.WebViewAssetLoader;
-import android.webkit.WebViewClient;
-import android.webkit.WebChromeClient;
+import android.os.Handler;
+import android.view.Gravity;
+import android.view.View;
+import android.view.inputmethod.InputMethodManager;
+import android.content.Context;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.HorizontalScrollView;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
+import android.widget.Toast;
 
-import java.io.InputStream;
+import com.chaquo.python.AndroidPlatform;
+import com.chaquo.python.PyObject;
+import com.chaquo.python.Python;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends Activity {
 
-    private static final int OPEN_FILE = 1001;
-    private static final int SAVE_FILE = 1002;
+    private CodeEditor editor;
+    private TextView lineNumbers;
+    private TextView terminal;
+    private TextView filename;
+    private Button runButton;
 
-    private WebView webView;
     private Uri currentUri = null;
+    private String currentFile = "untitled.py";
+
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private volatile boolean pythonReady = false;
+
+    private int dp(float value) {
+        return (int)(value * getResources().getDisplayMetrics().density + 0.5f);
+    }
+
+    private TextView text(String value, float size, int color) {
+        TextView t = new TextView(this);
+        t.setText(value);
+        t.setTextSize(size);
+        t.setTextColor(color);
+        return t;
+    }
+
+    private Button button(String value) {
+        Button b = new Button(this);
+        b.setText(value);
+        b.setTextSize(12);
+        b.setTextColor(Color.WHITE);
+        b.setAllCaps(false);
+        return b;
+    }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    protected void onCreate(Bundle state) {
+        super.onCreate(state);
 
-        webView = new WebView(this);
+        buildUi();
+        initPython();
+    }
 
-        WebViewAssetLoader assetLoader =
-                new WebViewAssetLoader.Builder()
-                        .addPathHandler(
-                                "/assets/",
-                                new WebViewAssetLoader.AssetsPathHandler(this)
-                        )
-                        .build();
+    private void buildUi() {
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(Color.rgb(9, 11, 15));
 
-        webView.setWebChromeClient(new WebChromeClient());
+        LinearLayout header = new LinearLayout(this);
+        header.setOrientation(LinearLayout.HORIZONTAL);
+        header.setGravity(Gravity.CENTER_VERTICAL);
+        header.setPadding(dp(10), dp(4), dp(6), dp(4));
+        header.setBackgroundColor(Color.rgb(13, 16, 21));
 
-        webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public WebResourceResponse shouldInterceptRequest(
-                    WebView view,
-                    WebResourceRequest request
-            ) {
-                return assetLoader.shouldInterceptRequest(request.getUrl());
+        TextView logo = text("M", 25, Color.rgb(255, 212, 59));
+        logo.setTypeface(Typeface.DEFAULT_BOLD);
+
+        filename = text(currentFile, 15, Color.WHITE);
+        filename.setTypeface(Typeface.MONOSPACE);
+
+        header.addView(logo, new LinearLayout.LayoutParams(dp(38), dp(52)));
+        header.addView(filename, new LinearLayout.LayoutParams(0, dp(52), 1));
+
+        root.addView(header);
+
+        HorizontalScrollView actionsScroll = new HorizontalScrollView(this);
+        actionsScroll.setHorizontalScrollBarEnabled(false);
+
+        LinearLayout actions = new LinearLayout(this);
+        actions.setGravity(Gravity.CENTER_VERTICAL);
+        actions.setPadding(dp(5), 0, dp(5), 0);
+
+        Button newButton = button("NEW");
+        Button openButton = button("OPEN");
+        Button saveButton = button("SAVE");
+        runButton = button("RUN");
+        Button undoButton = button("↶");
+        Button redoButton = button("↷");
+
+        actions.addView(newButton);
+        actions.addView(openButton);
+        actions.addView(saveButton);
+        actions.addView(runButton);
+        actions.addView(undoButton);
+        actions.addView(redoButton);
+
+        actionsScroll.addView(actions);
+        root.addView(actionsScroll, new LinearLayout.LayoutParams(-1, dp(50)));
+
+        newButton.setOnClickListener(v -> newFile());
+        openButton.setOnClickListener(v -> openFile());
+        saveButton.setOnClickListener(v -> saveFile());
+        runButton.setOnClickListener(v -> runPython());
+        undoButton.setOnClickListener(v -> editor.undoText());
+        redoButton.setOnClickListener(v -> editor.redoText());
+
+        LinearLayout editorArea = new LinearLayout(this);
+        editorArea.setOrientation(LinearLayout.HORIZONTAL);
+        editorArea.setBackgroundColor(Color.rgb(18, 21, 27));
+
+        lineNumbers = text("1", 14, Color.rgb(100, 108, 120));
+        lineNumbers.setTypeface(Typeface.MONOSPACE);
+        lineNumbers.setGravity(Gravity.TOP | Gravity.RIGHT);
+        lineNumbers.setPadding(dp(5), dp(10), dp(8), dp(20));
+        lineNumbers.setBackgroundColor(Color.rgb(13, 16, 21));
+
+        editor = new CodeEditor(this);
+
+        editorArea.addView(lineNumbers,
+                new LinearLayout.LayoutParams(dp(45), -1));
+
+        editorArea.addView(editor,
+                new LinearLayout.LayoutParams(0, -1, 1));
+
+        root.addView(editorArea,
+                new LinearLayout.LayoutParams(-1, 0, 1));
+
+        editor.addTextChangedListener(new android.text.TextWatcher() {
+            public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
+            public void onTextChanged(CharSequence s, int st, int b, int c) {
+                updateLineNumbers();
             }
-
-            @Override
-            public WebResourceResponse shouldInterceptRequest(
-                    WebView view,
-                    String url
-            ) {
-                return assetLoader.shouldInterceptRequest(Uri.parse(url));
-            }
+            public void afterTextChanged(android.text.Editable e) {}
         });
 
-        webView.getSettings().setJavaScriptEnabled(true);
-        webView.getSettings().setDomStorageEnabled(true);
-        webView.getSettings().setAllowFileAccess(false);
-        webView.getSettings().setAllowContentAccess(true);
+        LinearLayout terminalHeader = new LinearLayout(this);
+        terminalHeader.setGravity(Gravity.CENTER_VERTICAL);
+        terminalHeader.setPadding(dp(10), 0, dp(10), 0);
+        terminalHeader.setBackgroundColor(Color.rgb(13, 16, 21));
 
-        webView.addJavascriptInterface(new AndroidBridge(), "Android");
+        TextView terminalTitle = text("TERMINAL", 12, Color.rgb(255, 212, 59));
+        terminalHeader.addView(terminalTitle,
+                new LinearLayout.LayoutParams(0, dp(34), 1));
 
-        setContentView(webView);
+        Button clear = button("CLEAR");
+        terminalHeader.addView(clear);
 
-        webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
+        root.addView(terminalHeader);
+
+        terminal = text("MalzPy Python ready.\n", 13, Color.rgb(210, 214, 220));
+        terminal.setTypeface(Typeface.MONOSPACE);
+        terminal.setPadding(dp(10), dp(8), dp(10), dp(8));
+        terminal.setBackgroundColor(Color.rgb(7, 9, 12));
+
+        ScrollView terminalScroll = new ScrollView(this);
+        terminalScroll.addView(terminal);
+        root.addView(terminalScroll,
+                new LinearLayout.LayoutParams(-1, dp(145)));
+
+        clear.setOnClickListener(v -> terminal.setText(""));
+
+        setContentView(root);
+        updateLineNumbers();
     }
 
-    private String getName(Uri uri) {
-        Cursor c = getContentResolver().query(
-                uri,
-                null,
-                null,
-                null,
-                null
-        );
+    private void updateLineNumbers() {
+        if (lineNumbers == null || editor == null) return;
 
-        if (c != null) {
+        String value = editor.getText().toString();
+        int count = 1;
+
+        for (int i = 0; i < value.length(); i++) {
+            if (value.charAt(i) == '\n') count++;
+        }
+
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 1; i <= count; i++) {
+            sb.append(i);
+            if (i < count) sb.append('\n');
+        }
+
+        lineNumbers.setText(sb.toString());
+    }
+
+    private void initPython() {
+        runButton.setEnabled(false);
+
+        executor.execute(() -> {
             try {
-                int i = c.getColumnIndex(OpenableColumns.DISPLAY_NAME);
-                if (c.moveToFirst() && i >= 0) {
-                    return c.getString(i);
+                if (!Python.isStarted()) {
+                    Python.start(new AndroidPlatform(this));
                 }
-            } finally {
-                c.close();
+
+                Python.getInstance();
+
+                pythonReady = true;
+
+                runOnUiThread(() -> {
+                    runButton.setEnabled(true);
+                    terminal.append("Python runtime siap (offline).\n");
+                });
+
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    terminal.append("Python gagal dimuat:\n" +
+                            e.getMessage() + "\n");
+                });
             }
-        }
-
-        return "untitled.py";
+        });
     }
 
-    private void openPicker() {
-        Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-        i.addCategory(Intent.CATEGORY_OPENABLE);
-        i.setType("text/x-python");
-        startActivityForResult(i, OPEN_FILE);
+    private void newFile() {
+        final EditText input = new EditText(this);
+        input.setHint("nama file, contoh: main.py");
+        input.setSingleLine(true);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("New Python File")
+                .setMessage("Masukkan nama file baru")
+                .setView(input)
+                .setNegativeButton("BATAL", null)
+                .setPositiveButton("BUAT", null)
+                .create();
+
+        dialog.setOnShowListener(v -> {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(x -> {
+                String name = input.getText().toString().trim();
+
+                if (name.isEmpty()) {
+                    input.setError("Nama file wajib diisi");
+                    return;
+                }
+
+                if (!name.toLowerCase().endsWith(".py")) {
+                    name += ".py";
+                }
+
+                currentUri = null;
+                currentFile = name;
+                filename.setText(name);
+                editor.setCode("");
+                terminal.setText("File baru: " + name + "\n");
+
+                dialog.dismiss();
+
+                editor.requestFocus();
+                InputMethodManager imm =
+                        (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
+                imm.showSoftInput(editor, InputMethodManager.SHOW_IMPLICIT);
+            });
+        });
+
+        dialog.show();
     }
 
-    private void savePicker(String name) {
-        if (!name.toLowerCase().endsWith(".py")) {
-            name += ".py";
+    private void openFile() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("text/x-python");
+        startActivityForResult(intent, 100);
+    }
+
+    private void saveFile() {
+        if (currentUri == null) {
+            Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("text/x-python");
+            intent.putExtra(Intent.EXTRA_TITLE, currentFile);
+            startActivityForResult(intent, 101);
+            return;
         }
 
-        Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-        i.addCategory(Intent.CATEGORY_OPENABLE);
-        i.setType("text/x-python");
-        i.putExtra(Intent.EXTRA_TITLE, name);
-        startActivityForResult(i, SAVE_FILE);
+        writeFile(currentUri);
+    }
+
+    private void writeFile(Uri uri) {
+        executor.execute(() -> {
+            try {
+                OutputStream out = getContentResolver().openOutputStream(uri);
+
+                if (out == null) throw new Exception("Tidak bisa membuka file");
+
+                out.write(editor.getText().toString().getBytes(StandardCharsets.UTF_8));
+                out.close();
+
+                runOnUiThread(() ->
+                        terminal.append("Saved: " + currentFile + "\n"));
+
+            } catch (Exception e) {
+                runOnUiThread(() ->
+                        terminal.append("SAVE ERROR: " + e.getMessage() + "\n"));
+            }
+        });
+    }
+
+    private void loadFile(Uri uri) {
+        executor.execute(() -> {
+            try {
+                BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(
+                                getContentResolver().openInputStream(uri),
+                                StandardCharsets.UTF_8));
+
+                StringBuilder sb = new StringBuilder();
+                String line;
+
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line).append('\n');
+                }
+
+                reader.close();
+
+                String name = uri.getLastPathSegment();
+                if (name == null || !name.toLowerCase().endsWith(".py")) {
+                    name = "opened.py";
+                }
+
+                final String finalName = name;
+
+                runOnUiThread(() -> {
+                    currentUri = uri;
+                    currentFile = finalName;
+                    filename.setText(finalName);
+                    editor.setCode(sb.toString());
+                    terminal.setText("Opened: " + finalName + "\n");
+                });
+
+            } catch (Exception e) {
+                runOnUiThread(() ->
+                        terminal.append("OPEN ERROR: " + e.getMessage() + "\n"));
+            }
+        });
+    }
+
+    private void runPython() {
+        if (!pythonReady) {
+            Toast.makeText(this, "Python masih dimuat...", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        final String code = editor.getText().toString();
+
+        terminal.append("\n>>> RUN " + currentFile + "\n");
+
+        runButton.setEnabled(false);
+
+        executor.execute(() -> {
+            try {
+                Python py = Python.getInstance();
+                PyObject runner = py.getModule("runner");
+                PyObject result = runner.callAttr("run", code);
+                String output = result.toJava(String.class);
+
+                runOnUiThread(() -> {
+                    terminal.append(output);
+
+                    if (!output.endsWith("\n")) {
+                        terminal.append("\n");
+                    }
+
+                    terminal.append(">>> selesai\n");
+                    runButton.setEnabled(true);
+                });
+
+            } catch (Exception e) {
+                runOnUiThread(() -> {
+                    terminal.append("RUN ERROR:\n");
+                    terminal.append(e.toString());
+                    terminal.append("\n");
+                    runButton.setEnabled(true);
+                });
+            }
+        });
     }
 
     @Override
-    protected void onActivityResult(
-            int requestCode,
-            int resultCode,
-            Intent data
-    ) {
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
 
-        if (resultCode != RESULT_OK || data == null) {
+        if (resultCode != RESULT_OK || data == null || data.getData() == null) {
             return;
         }
 
         Uri uri = data.getData();
 
-        if (uri == null) {
-            return;
-        }
+        if (requestCode == 100) {
+            String path = uri.getLastPathSegment();
 
-        if (requestCode == OPEN_FILE) {
-
-            String name = getName(uri);
-
-            if (!name.toLowerCase().endsWith(".py")) {
-                webView.evaluateJavascript(
-                        "window.showAndroidError && window.showAndroidError('Hanya file .py yang bisa dibuka.');",
-                        null
-                );
+            if (path == null || !path.toLowerCase().endsWith(".py")) {
+                Toast.makeText(this,
+                        "MalzPy hanya bisa membuka file .py",
+                        Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            try {
-                InputStream in = getContentResolver().openInputStream(uri);
-                byte[] bytes = in.readAllBytes();
-                in.close();
-
-                currentUri = uri;
-
-                String content = new String(
-                        bytes,
-                        StandardCharsets.UTF_8
-                );
-
-                String js =
-                        "window.openFromAndroid(" +
-                        JSONObjectEscape.quote(name) +
-                        "," +
-                        JSONObjectEscape.quote(content) +
-                        ");";
-
-                webView.evaluateJavascript(js, null);
-
-            } catch (Exception e) {
-                webView.evaluateJavascript(
-                        "window.showAndroidError && window.showAndroidError(" +
-                        JSONObjectEscape.quote(e.toString()) +
-                        ");",
-                        null
-                );
-            }
-
-        } else if (requestCode == SAVE_FILE) {
-
             currentUri = uri;
+            loadFile(uri);
 
-            webView.evaluateJavascript(
-                    "window.saveCurrentContent && window.saveCurrentContent();",
-                    null
-            );
+        } else if (requestCode == 101) {
+            currentUri = uri;
+            writeFile(uri);
         }
     }
 
-    private void saveContent(Uri uri, String content) {
-        try {
-            OutputStream out =
-                    getContentResolver().openOutputStream(uri, "wt");
-
-            if (out == null) {
-                throw new Exception("Tidak bisa membuka file.");
-            }
-
-            out.write(content.getBytes(StandardCharsets.UTF_8));
-            out.flush();
-            out.close();
-
-            webView.evaluateJavascript(
-                    "window.savedFromAndroid && window.savedFromAndroid();",
-                    null
-            );
-
-        } catch (Exception e) {
-            webView.evaluateJavascript(
-                    "window.showAndroidError && window.showAndroidError(" +
-                    JSONObjectEscape.quote(e.toString()) +
-                    ");",
-                    null
-            );
-        }
-    }
-
-    public class AndroidBridge {
-
-        @JavascriptInterface
-        public void openFile() {
-            runOnUiThread(() -> openPicker());
-        }
-
-        @JavascriptInterface
-        public void saveFile(
-                String name,
-                String content
-        ) {
-            runOnUiThread(() -> {
-
-                if (currentUri == null) {
-                    savePicker(name);
-                } else {
-                    saveContent(currentUri, content);
-                }
-            });
-        }
-
-        @JavascriptInterface
-        public void saveAs(
-                String name,
-                String content
-        ) {
-            runOnUiThread(() -> savePicker(name));
-        }
-    }
-
-    static class JSONObjectEscape {
-
-        static String quote(String s) {
-            if (s == null) return "\"\"";
-
-            StringBuilder b = new StringBuilder("\"");
-
-            for (char c : s.toCharArray()) {
-                switch (c) {
-                    case '"': b.append("\\\""); break;
-                    case '\\': b.append("\\\\"); break;
-                    case '\n': b.append("\\n"); break;
-                    case '\r': b.append("\\r"); break;
-                    case '\t': b.append("\\t"); break;
-                    case '\b': b.append("\\b"); break;
-                    case '\f': b.append("\\f"); break;
-                    default:
-                        if (c < 32) {
-                            b.append(String.format("\\u%04x", (int)c));
-                        } else {
-                            b.append(c);
-                        }
-                }
-            }
-
-            b.append("\"");
-            return b.toString();
-        }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        executor.shutdownNow();
     }
 }
