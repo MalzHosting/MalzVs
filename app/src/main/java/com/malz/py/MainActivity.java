@@ -10,9 +10,8 @@ import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
-import androidx.annotation.Nullable;
 import androidx.webkit.WebViewAssetLoader;
-import androidx.webkit.WebViewClient;
+import android.webkit.WebViewClient;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -118,7 +117,7 @@ public class MainActivity extends Activity {
     protected void onActivityResult(
             int requestCode,
             int resultCode,
-            @Nullable Intent data
+            Intent data
     ) {
         super.onActivityResult(requestCode, resultCode, data);
 
