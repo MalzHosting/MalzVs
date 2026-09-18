@@ -214,6 +214,19 @@ public class MainActivity extends Activity {
                 new LinearLayout.LayoutParams(dp(40), -1));
 
         editor = new CodeEditor(this);
+        editor.setFocusable(true);
+        editor.setFocusableInTouchMode(true);
+        editor.setClickable(true);
+        editor.setLongClickable(true);
+        editor.setEnabled(true);
+        editor.setCursorVisible(true);
+        editor.setTextIsSelectable(true);
+        editor.setSingleLine(false);
+        editor.setInputType(android.text.InputType.TYPE_CLASS_TEXT |
+                android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE |
+                android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        editor.setShowSoftInputOnFocus(true);
+
 
         codeArea.addView(editor,
                 new LinearLayout.LayoutParams(0, 0, 1));
@@ -432,8 +445,67 @@ public class MainActivity extends Activity {
         inputProvider.submit(value);
     }
 
-    private void showEditor() {
+    
+    private void modernizeButtons(android.view.View root) {
+        if (root == null) return;
+
+        styleViewButtons(root);
+    }
+
+    private void styleViewButtons(android.view.View view) {
+        if (view instanceof android.widget.Button) {
+            android.widget.Button b = (android.widget.Button) view;
+            String t = b.getText() == null ? "" : b.getText().toString().trim();
+
+            android.graphics.drawable.GradientDrawable bg =
+                    new android.graphics.drawable.GradientDrawable();
+
+            if (t.equalsIgnoreCase("run")) {
+                bg.setColor(android.graphics.Color.rgb(76, 175, 80));
+                b.setTextColor(android.graphics.Color.WHITE);
+            } else if (t.equalsIgnoreCase("menu")) {
+                bg.setColor(android.graphics.Color.rgb(55, 55, 58));
+                b.setTextColor(android.graphics.Color.WHITE);
+            } else {
+                bg.setColor(android.graphics.Color.rgb(48, 48, 51));
+                b.setTextColor(android.graphics.Color.rgb(225, 225, 230));
+            }
+
+            bg.setCornerRadius(dp(12));
+            b.setBackground(bg);
+            b.setMinHeight(dp(46));
+            b.setMinWidth(dp(52));
+            b.setPadding(dp(14), 0, dp(14), 0);
+            b.setAllCaps(false);
+            b.setGravity(android.view.Gravity.CENTER);
+            b.setTextSize(14);
+            b.setStateListAnimator(null);
+            b.setElevation(dp(2));
+
+            android.view.ViewGroup.LayoutParams lp = b.getLayoutParams();
+            if (lp instanceof android.widget.LinearLayout.LayoutParams) {
+                android.widget.LinearLayout.LayoutParams x =
+                        (android.widget.LinearLayout.LayoutParams) lp;
+                x.setMargins(dp(3), dp(3), dp(3), dp(3));
+                b.setLayoutParams(x);
+            }
+        }
+
+        if (view instanceof android.view.ViewGroup) {
+            android.view.ViewGroup group = (android.view.ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                styleViewButtons(group.getChildAt(i));
+            }
+        }
+    }
+
+    private int dp(int value) {
+        return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
+    }
+
+private void showEditor() {
         setContentView(editorPage);
+        modernizeButtons(editorPage);
     }
 
     private void showTerminal() {
