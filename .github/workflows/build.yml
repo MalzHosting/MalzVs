@@ -54,7 +54,16 @@ jobs:
 
       - name: Build MalzPy
         run: |
-          gradle assembleDebug --no-daemon --console=plain --stacktrace
+          set -o pipefail
+          gradle assembleDebug --no-daemon --console=plain --stacktrace 2>&1 | tee build-output.log
+
+      - name: Show Build Error
+        if: failure()
+        run: |
+          echo "========== BUILD ERROR =========="
+          grep -n -B 10 -A 20 -E "FAILURE:|What went wrong|Execution failed|error:|Could not|Caused by:" build-output.log | tail -300 || true
+          echo "========== LAST 150 LINES =========="
+          tail -150 build-output.log
 
       - name: Check APK
         run: |
