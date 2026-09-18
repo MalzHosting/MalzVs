@@ -216,11 +216,16 @@ public class MainActivity extends Activity {
         editor = new CodeEditor(this);
         editor.setFocusable(true);
         editor.setFocusableInTouchMode(true);
+        editor.setKeyListener(android.text.method.TextKeyListener.getInstance());
+        editor.setCursorVisible(true);
+        editor.setEnabled(true);
+        editor.setClickable(true);
+
         editor.setClickable(true);
         editor.setLongClickable(true);
         editor.setEnabled(true);
         editor.setCursorVisible(true);
-        editor.setTextIsSelectable(true);
+        editor.setTextIsSelectable(false);
         editor.setSingleLine(false);
         editor.setInputType(android.text.InputType.TYPE_CLASS_TEXT |
                 android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE |
@@ -261,7 +266,7 @@ public class MainActivity extends Activity {
     private void addTool(LinearLayout bar, String label, String value) {
 
         Button b = btn(label);
-        b.setTextSize(17);
+        b.setTextSize(14);
 
         bar.addView(b,
                 new LinearLayout.LayoutParams(
@@ -460,22 +465,20 @@ public class MainActivity extends Activity {
             android.graphics.drawable.GradientDrawable bg =
                     new android.graphics.drawable.GradientDrawable();
 
-            if (t.equalsIgnoreCase("run")) {
-                bg.setColor(android.graphics.Color.rgb(76, 175, 80));
-                b.setTextColor(android.graphics.Color.WHITE);
-            } else if (t.equalsIgnoreCase("menu")) {
-                bg.setColor(android.graphics.Color.rgb(55, 55, 58));
+            if (t.equalsIgnoreCase("run") ||
+                t.equalsIgnoreCase("menu")) {
+                bg.setColor(android.graphics.Color.rgb(70, 70, 73));
                 b.setTextColor(android.graphics.Color.WHITE);
             } else {
-                bg.setColor(android.graphics.Color.rgb(48, 48, 51));
+                bg.setColor(android.graphics.Color.rgb(58, 58, 61));
                 b.setTextColor(android.graphics.Color.rgb(225, 225, 230));
             }
 
-            bg.setCornerRadius(dp(12));
+            bg.setCornerRadius(dp(9));
             b.setBackground(bg);
-            b.setMinHeight(dp(46));
-            b.setMinWidth(dp(52));
-            b.setPadding(dp(14), 0, dp(14), 0);
+            b.setMinHeight(dp(38));
+            b.setMinWidth(dp(48));
+            b.setPadding(dp(9), 0, dp(9), 0);
             b.setAllCaps(false);
             b.setGravity(android.view.Gravity.CENTER);
             b.setTextSize(14);
