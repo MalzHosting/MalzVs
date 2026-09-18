@@ -3,143 +3,159 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport"
-content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+      content="width=device-width,
+      initial-scale=1,
+      maximum-scale=1,
+      user-scalable=no">
+
+<title>MalzPy</title>
 
 <style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+*{
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+}
 
 html,body{
- margin:0;
- width:100%;
- height:100%;
- overflow:hidden;
- background:#303030;
- color:#eee;
- font-family:Arial,sans-serif
-}
-
-#app{
- width:100%;
- height:100%;
- display:flex;
- flex-direction:column
-}
-
-.top{
- height:62px;
- min-height:62px;
- background:#292929;
- display:flex;
- align-items:center;
- gap:9px;
- padding:7px 10px
-}
-
-.logo{
- font-size:21px;
- font-weight:bold;
- white-space:nowrap
-}
-
-.filename{
- flex:1;
- min-width:80px;
- background:#202020;
- border:1px solid #444;
- border-radius:5px;
- color:#ddd;
- padding:9px;
- font-family:monospace
+    margin:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#0d0f12;
+    color:#eee;
+    font-family:Arial,sans-serif;
 }
 
 button{
- background:#383838;
- border:0;
- border-radius:5px;
- color:#eee;
- padding:9px 12px;
- font-weight:bold
+    border:1px solid #30343b;
+    background:#171a1f;
+    color:#eee;
+    border-radius:7px;
+    padding:9px 11px;
+    font-weight:bold;
 }
 
-button:active{background:#555}
-
-.run{background:#454545}
-
-.main{
- flex:1;
- min-height:0;
- display:flex
+button:active{
+    background:#292e36;
 }
 
-.editor{
- flex:1;
- min-width:0;
- display:flex;
- background:#303030
+#app{
+    width:100%;
+    height:100%;
+    display:flex;
+    flex-direction:column;
 }
 
-.numbers{
- width:42px;
- min-width:42px;
- padding:9px 7px 0 0;
- text-align:right;
- color:#777;
- font:15px/24px monospace;
- overflow:hidden
+#top{
+    min-height:56px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:7px;
+    background:#12151a;
+    border-bottom:1px solid #2a2e35;
 }
 
-textarea{
- flex:1;
- border:0;
- outline:0;
- resize:none;
- background:#303030;
- color:#eee;
- padding:9px 10px;
- font:15px/24px monospace;
- tab-size:4;
- white-space:pre;
- caret-color:#fff
+.logo{
+    font-size:18px;
+    font-weight:bold;
+    color:#fff;
+    white-space:nowrap;
 }
 
-.terminal{
- height:145px;
- min-height:145px;
- background:#202020;
- border-top:1px solid #444;
- display:flex;
- flex-direction:column
+.logo span{
+    color:#ffd21f;
 }
 
-.output{
- flex:1;
- overflow:auto;
- padding:8px;
- color:#ddd;
- font:12px/18px monospace
+#filename{
+    flex:1;
+    min-width:60px;
+    background:#0b0d10;
+    border:1px solid #30343b;
+    color:#fff;
+    border-radius:7px;
+    padding:9px;
 }
 
-.tools{
- height:52px;
- min-height:52px;
- display:flex;
- overflow-x:auto;
- border-top:1px solid #383838
+#run{
+    background:#ffd21f;
+    color:#111;
 }
 
-.tools button{
- min-width:58px;
- height:52px;
- border-radius:0;
- background:#292929;
- font:15px monospace
+#editorArea{
+    flex:1;
+    min-height:0;
+    display:flex;
+    overflow:hidden;
 }
 
-@media(max-width:650px){
- .top{height:58px;min-height:58px;padding:6px}
- .logo{font-size:17px}
- .top button{padding:8px}
- .terminal{height:125px;min-height:125px}
+#numbers{
+    width:42px;
+    overflow:hidden;
+    padding-top:12px;
+    background:#101216;
+    color:#666;
+    text-align:right;
+    padding-right:8px;
+    font:14px monospace;
+    line-height:22px;
+    user-select:none;
+}
+
+#editor{
+    flex:1;
+    resize:none;
+    border:0;
+    outline:0;
+    padding:10px;
+    background:#0d0f12;
+    color:#eee;
+    font:14px monospace;
+    line-height:22px;
+    white-space:pre;
+    overflow:auto;
+}
+
+#terminal{
+    height:145px;
+    overflow:auto;
+    background:#080a0c;
+    border-top:1px solid #30343b;
+    padding:10px;
+    color:#d7d7d7;
+    font:13px monospace;
+    white-space:pre-wrap;
+}
+
+#tools{
+    display:flex;
+    gap:5px;
+    padding:6px;
+    overflow-x:auto;
+    background:#12151a;
+    border-top:1px solid #2a2e35;
+}
+
+#tools button{
+    min-width:44px;
+}
+
+#status{
+    padding:4px 8px;
+    font-size:11px;
+    color:#888;
+    background:#0b0d10;
+}
+
+@media(max-width:500px){
+    #top button{
+        padding:8px;
+        font-size:11px;
+    }
+
+    .logo{
+        font-size:15px;
+    }
 }
 </style>
 </head>
@@ -148,281 +164,468 @@ textarea{
 
 <div id="app">
 
-<div class="top">
- <div class="logo">MalzPy</div>
+    <div id="top">
+        <div class="logo">Malz<span>Py</span></div>
 
- <input
-  id="filename"
-  class="filename"
-  value="main.py"
-  spellcheck="false">
+        <input
+            id="filename"
+            value="main.py"
+            autocomplete="off">
 
- <button onclick="newFile()">NEW</button>
- <button onclick="Android.openFile()">OPEN</button>
- <button onclick="saveFile()">SAVE</button>
- <button onclick="saveAs()">SAVE AS</button>
- <button class="run" onclick="runCode()">RUN</button>
-</div>
+        <button onclick="newFile()">NEW</button>
+        <button onclick="openFile()">OPEN</button>
+        <button onclick="saveFile()">SAVE</button>
+        <button id="run" onclick="runCode()">RUN</button>
+    </div>
 
-<div class="main">
+    <div id="editorArea">
 
-<div class="editor">
+        <div id="numbers">1</div>
 
-<div id="numbers" class="numbers">1</div>
+        <textarea
+            id="editor"
+            spellcheck="false"
+            autocapitalize="off"
+            autocomplete="off"
+            autocorrect="off"
+            oninput="updateLines()"
+            onscroll="syncScroll()"
+            onkeydown="editorKey(event)"
+        >print("Hello from MalzPy")
+</textarea>
 
-<textarea
- id="code"
- spellcheck="false"
- autocorrect="off"
- autocomplete="off"
- autocapitalize="off"></textarea>
+    </div>
 
-</div>
+    <div id="terminal">MalzPy terminal
+Python runtime sedang dimuat...</div>
 
-</div>
+    <div id="status">Loading...</div>
 
-<div class="terminal">
-
-<div id="output" class="output">
-MalzPy Python Terminal<br>
-Python runtime: loading...
-</div>
-
-<div class="tools">
-
-<button onclick="insert('    ')">Tab</button>
-<button onclick="pair('{}')">{}</button>
-<button onclick="pair('()')">()</button>
-<button onclick="pair('[]')">[]</button>
-<button onclick="pair('\"\"')">""</button>
-<button onclick="insert(':')">:</button>
-<button onclick="undo()">↶</button>
-<button onclick="redo()">↷</button>
+    <div id="tools">
+        <button onclick="insertText('    ')">Tab</button>
+        <button onclick="insertText('{}')">{}</button>
+        <button onclick="insertText('()')">()</button>
+        <button onclick="insertText('[]')">[]</button>
+        <button onclick="insertText('""')">""</button>
+        <button onclick="insertText(':')">:</button>
+        <button onclick="document.execCommand('undo')">↶</button>
+        <button onclick="document.execCommand('redo')">↷</button>
+    </div>
 
 </div>
 
-</div>
+<script type="module">
 
-</div>
+let mp = null;
+let pythonReady = false;
+
+const terminal = document.getElementById("terminal");
+const editor = document.getElementById("editor");
+const filename = document.getElementById("filename");
+const statusEl = document.getElementById("status");
+
+function output(text){
+    terminal.textContent += String(text);
+    terminal.scrollTop = terminal.scrollHeight;
+}
+
+window.onPythonOutput = function(text){
+    output(text);
+};
+
+async function loadPython(){
+
+    try{
+
+        statusEl.textContent = "Memuat Python...";
+
+        const module =
+            await import("./micropython/micropython.mjs");
+
+        mp = await module.loadMicroPython({
+            linebuffer:true,
+            stdout:(text)=>{
+                output(text);
+            },
+            stderr:(text)=>{
+                output(text);
+            }
+        });
+
+        pythonReady = true;
+
+        statusEl.textContent =
+            "Python siap • offline";
+
+        terminal.textContent =
+            "MalzPy terminal\nPython siap.\n";
+
+    }catch(e){
+
+        pythonReady = false;
+
+        statusEl.textContent =
+            "Python gagal dimuat";
+
+        terminal.textContent =
+            "Gagal memuat MicroPython:\n" +
+            String(e);
+    }
+}
+
+window.runMicroPython = async function(code){
+
+    if(!mp){
+        throw new Error("Python runtime belum siap.");
+    }
+
+    return await mp.runPython(code);
+};
+
+loadPython();
+
+</script>
 
 <script>
 
-const editor=document.getElementById("code");
-const numbers=document.getElementById("numbers");
-const output=document.getElementById("output");
-const filename=document.getElementById("filename");
+const editor =
+    document.getElementById("editor");
 
-let files={
- "main.py":"print('Hello from MalzPy')\n\nnama = 'Malz'\nprint('Halo', nama)\n\nfor i in range(5):\n    print(i)"
-};
+const numbers =
+    document.getElementById("numbers");
 
-function updateNumbers(){
- let n=editor.value.split("\n").length;
- let s="";
- for(let i=1;i<=n;i++)s+=i+"\\n";
- numbers.textContent=s;
+const filename =
+    document.getElementById("filename");
+
+const terminal =
+    document.getElementById("terminal");
+
+const statusEl =
+    document.getElementById("status");
+
+let currentFile = null;
+
+function updateLines(){
+
+    const count =
+        editor.value.split("\n").length;
+
+    let html = "";
+
+    for(let i=1;i<=count;i++){
+        html += i + "<br>";
+    }
+
+    numbers.innerHTML = html;
+
+    statusEl.textContent =
+        currentFile ?
+        "Editing " + currentFile :
+        "New file";
 }
 
-function insert(text){
- let a=editor.selectionStart;
- let b=editor.selectionEnd;
- editor.setRangeText(text,a,b,"end");
- editor.focus();
- updateNumbers();
+function syncScroll(){
+
+    numbers.scrollTop =
+        editor.scrollTop;
 }
 
-function pair(text){
- let a=editor.selectionStart;
- let b=editor.selectionEnd;
- let selected=editor.value.substring(a,b);
- let value=selected?text[0]+selected+text[1]:text;
- editor.setRangeText(value,a,b,"end");
- editor.focus();
- updateNumbers();
-}
+function openFile(){
 
-function undo(){
- document.execCommand("undo");
- updateNumbers();
-}
-
-function redo(){
- document.execCommand("redo");
- updateNumbers();
-}
-
-function newFile(){
-
- let name=prompt("Nama file:","main.py");
-
- if(!name)return;
-
- if(!name.endsWith(".py"))
-   name+=".py";
-
- files[name]="";
-
- filename.value=name;
- editor.value="";
-
- updateNumbers();
+    Android.openFile();
 }
 
 function saveFile(){
 
- files[filename.value]=editor.value;
+    let name =
+        filename.value.trim();
 
- Android.saveFile(
-   filename.value,
-   editor.value
- );
+    if(!name){
+        name = "main.py";
+    }
+
+    if(!name.toLowerCase().endsWith(".py")){
+        name += ".py";
+    }
+
+    filename.value = name;
+
+    Android.saveFile(
+        name,
+        editor.value
+    );
 }
 
-function saveAs(){
+function newFile(){
 
- let name=prompt(
-   "Simpan sebagai:",
-   filename.value
- );
+    const name =
+        prompt(
+            "Masukkan nama file Python:",
+            "main.py"
+        );
 
- if(!name)return;
+    if(name === null){
+        return;
+    }
 
- if(!name.endsWith(".py"))
-   name+=".py";
+    let n =
+        name.trim();
 
- filename.value=name;
+    if(!n){
+        alert("Nama file tidak boleh kosong.");
+        return;
+    }
 
- files[name]=editor.value;
+    if(!n.toLowerCase().endsWith(".py")){
+        n += ".py";
+    }
 
- Android.saveAs(
-   name,
-   editor.value
- );
+    currentFile = null;
+
+    filename.value = n;
+    editor.value = "";
+
+    terminal.textContent =
+        "MalzPy terminal\nFile baru: " + n;
+
+    statusEl.textContent =
+        "New file • " + n;
+
+    updateLines();
+
+    editor.focus();
 }
-
-window.openFromAndroid=function(name,content){
-
- filename.value=name;
- editor.value=content;
-
- files[name]=content;
-
- updateNumbers();
-
- log("Opened: "+name);
-};
-
-window.savedFromAndroid=function(){
- log("Saved: "+filename.value);
-};
-
-function log(text){
-
- output.innerHTML+=
-   String(text)
-   .replace(/&/g,"&amp;")
-   .replace(/</g,"&lt;")
-   .replace(/>/g,"&gt;")
-   .replace(/\n/g,"<br>")+
-   "<br>";
-
- output.scrollTop=output.scrollHeight;
-}
-
-window.onPythonOutput=function(text){
- log(text);
-};
 
 async function runCode(){
 
- output.innerHTML="";
+    const code =
+        editor.value;
 
- log(">>> "+filename.value);
- log(">>> Running...");
+    if(!code.trim()){
+        terminal.textContent =
+            "Tidak ada kode.";
+        return;
+    }
 
- try{
+    terminal.textContent =
+        "MalzPy terminal\nMenjalankan...\n";
 
-   if(!window.runMicroPython){
+    statusEl.textContent =
+        "Running Python...";
 
-     log("Python runtime belum siap.");
+    try{
 
-     return;
-   }
+        if(!window.runMicroPython){
+            throw new Error(
+                "Runtime Python belum dimuat."
+            );
+        }
 
-   await window.runMicroPython(
-     editor.value
-   );
+        await window.runMicroPython(code);
 
-   log(">>> Process finished");
+        statusEl.textContent =
+            "Selesai";
 
- }catch(e){
+    }catch(e){
 
-   log("ERROR: "+e);
+        output("\nError: " + e);
 
- }
+        statusEl.textContent =
+            "Python error";
+    }
 }
 
-editor.addEventListener("input",updateNumbers);
+function insertText(text){
 
-editor.addEventListener("scroll",()=>{
- numbers.scrollTop=editor.scrollTop;
-});
+    const start =
+        editor.selectionStart;
 
-editor.addEventListener("keydown",function(e){
+    const end =
+        editor.selectionEnd;
 
- if(e.key==="Tab"){
-   e.preventDefault();
-   insert("    ");
- }
+    editor.value =
+        editor.value.substring(0,start) +
+        text +
+        editor.value.substring(end);
 
- if(e.key==="("){
-   e.preventDefault();
-   pair("()");
- }
+    editor.selectionStart =
+        editor.selectionEnd =
+        start + text.length;
 
- if(e.key==="["){
-   e.preventDefault();
-   pair("[]");
- }
+    updateLines();
+    editor.focus();
+}
 
- if(e.key==="{"){
-   e.preventDefault();
-   pair("{}");
- }
+function editorKey(e){
 
- if(e.key==='"'){
-   e.preventDefault();
-   pair('""');
- }
+    if(e.key === "Tab"){
 
- if(e.key==="Enter"){
+        e.preventDefault();
 
-   const pos=editor.selectionStart;
+        insertText("    ");
 
-   const before=
-     editor.value.substring(0,pos);
+        return;
+    }
 
-   const line=
-     before.split("\n").pop();
+    const pairs = {
+        "(":")",
+        "[":"]",
+        "{":"}",
+        "\"":"\"",
+        "'":"'"
+    };
 
-   const indent=
-     line.match(/^\s*/)[0];
+    if(pairs[e.key]){
 
-   setTimeout(()=>{
-     insert(indent);
-   },0);
- }
+        e.preventDefault();
 
-});
+        const close =
+            pairs[e.key];
 
-editor.value=files["main.py"];
+        const start =
+            editor.selectionStart;
 
-updateNumbers();
+        const end =
+            editor.selectionEnd;
 
-</script>
+        const selected =
+            editor.value.substring(
+                start,
+                end
+            );
 
-<script type="module">
-import "./micropython/micropython.mjs";
+        editor.value =
+            editor.value.substring(0,start) +
+            e.key +
+            selected +
+            close +
+            editor.value.substring(end);
+
+        editor.selectionStart =
+            start + 1;
+
+        editor.selectionEnd =
+            end + 1;
+
+        updateLines();
+
+        return;
+    }
+
+    if(e.key === "Enter"){
+
+        const pos =
+            editor.selectionStart;
+
+        const before =
+            editor.value.substring(
+                0,
+                pos
+            );
+
+        const line =
+            before.substring(
+                before.lastIndexOf("\n") + 1
+            );
+
+        const indent =
+            line.match(/^\s*/)[0];
+
+        const extra =
+            /:\s*$/.test(line)
+            ? "    "
+            : "";
+
+        setTimeout(()=>{
+            const p =
+                editor.selectionStart;
+
+            editor.value =
+                editor.value.substring(0,p) +
+                indent +
+                extra +
+                editor.value.substring(p);
+
+            editor.selectionStart =
+                editor.selectionEnd =
+                p + indent.length + extra.length;
+
+            updateLines();
+        },0);
+    }
+}
+
+window.openFromAndroid =
+function(name, content){
+
+    if(!name.toLowerCase().endsWith(".py")){
+        showAndroidError(
+            "Hanya file .py yang bisa dibuka."
+        );
+        return;
+    }
+
+    currentFile = name;
+
+    filename.value = name;
+    editor.value = content;
+
+    terminal.textContent =
+        "MalzPy terminal\nOpened: " + name;
+
+    statusEl.textContent =
+        "Opened " + name;
+
+    updateLines();
+};
+
+window.saveCurrentContent =
+function(){
+
+    if(!filename.value.toLowerCase().endsWith(".py")){
+        filename.value += ".py";
+    }
+
+    Android.saveFile(
+        filename.value,
+        editor.value
+    );
+};
+
+window.savedFromAndroid =
+function(){
+
+    currentFile =
+        filename.value;
+
+    statusEl.textContent =
+        "Saved " + currentFile;
+
+    terminal.textContent +=
+        "\nSaved: " + currentFile;
+};
+
+window.showAndroidError =
+function(message){
+
+    terminal.textContent +=
+        "\nError: " + message;
+
+    statusEl.textContent =
+        "Error";
+};
+
+function output(text){
+
+    terminal.textContent +=
+        String(text);
+
+    terminal.scrollTop =
+        terminal.scrollHeight;
+}
+
+updateLines();
+
 </script>
 
 </body>
