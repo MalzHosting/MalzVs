@@ -321,10 +321,48 @@ async function loadPython() {
                 "MalzPy terminal\n" +
                 "Memuat MicroPython...\n";
 
-            const module =
-                await import(
-                    "./micropython/micropython.mjs"
+            const mjsUrl =
+                new URL(
+                    "./micropython/micropython.mjs",
+                    document.baseURI
+                ).href;
+
+            const wasmUrl =
+                new URL(
+                    "./micropython/micropython.wasm",
+                    document.baseURI
+                ).href;
+
+            terminal.textContent +=
+                "MJS: " + mjsUrl + "\n" +
+                "WASM: " + wasmUrl + "\n";
+
+            const mjsResponse =
+                await fetch(mjsUrl);
+
+            if (!mjsResponse.ok) {
+                throw new Error(
+                    "micropython.mjs HTTP " +
+                    mjsResponse.status
                 );
+            }
+
+            const wasmResponse =
+                await fetch(wasmUrl);
+
+            if (!wasmResponse.ok) {
+                throw new Error(
+                    "micropython.wasm HTTP " +
+                    wasmResponse.status
+                );
+            }
+
+            terminal.textContent +=
+                "MJS OK\n" +
+                "WASM OK\n";
+
+            const module =
+                await import(mjsUrl);
 
             if (!module.loadMicroPython) {
                 throw new Error(
@@ -537,8 +575,8 @@ async function runCode(){
         return;
     }
 
-    terminal.textContent =
-        "MalzPy terminal\nMenjalankan...\n";
+    terminal.textContent +=
+        "\n\nMenjalankan...\n";
 
     statusEl.textContent =
         "Running Python...";
