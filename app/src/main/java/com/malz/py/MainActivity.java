@@ -12,6 +12,7 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import androidx.webkit.WebViewAssetLoader;
 import android.webkit.WebViewClient;
+import android.webkit.WebChromeClient;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -38,6 +39,8 @@ public class MainActivity extends Activity {
                                 new WebViewAssetLoader.AssetsPathHandler(this)
                         )
                         .build();
+
+        webView.setWebChromeClient(new WebChromeClient());
 
         webView.setWebViewClient(new WebViewClient() {
             @Override

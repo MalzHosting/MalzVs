@@ -158,6 +158,75 @@ button:active{
     }
 }
 </style>
+
+<style>
+#newModal{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:9999;
+    background:rgba(0,0,0,.75);
+    align-items:center;
+    justify-content:center;
+}
+
+#newBox{
+    width:88%;
+    max-width:380px;
+    background:#171a1f;
+    border:1px solid #30343b;
+    border-radius:12px;
+    padding:18px;
+    box-shadow:0 10px 40px #000;
+}
+
+#newBox h3{
+    margin:0 0 14px;
+}
+
+#newName{
+    width:100%;
+    padding:12px;
+    background:#0b0d10;
+    color:#fff;
+    border:1px solid #3a3f47;
+    border-radius:7px;
+    outline:none;
+}
+
+#newButtons{
+    display:flex;
+    gap:8px;
+    margin-top:14px;
+}
+
+#newButtons button{
+    flex:1;
+}
+
+#newCreate{
+    background:#ffd21f;
+    color:#111;
+}
+</style>
+
+<div id="newModal">
+    <div id="newBox">
+        <h3>New Python File</h3>
+
+        <input
+            id="newName"
+            type="text"
+            value="main.py"
+            autocomplete="off">
+
+        <div id="newButtons">
+            <button onclick="closeNew()">CANCEL</button>
+            <button id="newCreate" onclick="createNewFile()">CREATE</button>
+        </div>
+    </div>
+</div>
+
 </head>
 
 <body>
@@ -218,65 +287,107 @@ Python runtime sedang dimuat...</div>
 
 let mp = null;
 let pythonReady = false;
+let pythonLoading = null;
 
-const terminal = document.getElementById("terminal");
-const editor = document.getElementById("editor");
-const filename = document.getElementById("filename");
-const statusEl = document.getElementById("status");
+const terminal =
+    document.getElementById("terminal");
 
-function output(text){
+const statusEl =
+    document.getElementById("status");
+
+function pythonOutput(text) {
     terminal.textContent += String(text);
     terminal.scrollTop = terminal.scrollHeight;
 }
 
-window.onPythonOutput = function(text){
-    output(text);
-};
+window.onPythonOutput = pythonOutput;
 
-async function loadPython(){
+async function loadPython() {
 
-    try{
-
-        statusEl.textContent = "Memuat Python...";
-
-        const module =
-            await import("./micropython/micropython.mjs");
-
-        mp = await module.loadMicroPython({
-            linebuffer:true,
-            stdout:(text)=>{
-                output(text);
-            },
-            stderr:(text)=>{
-                output(text);
-            }
-        });
-
-        pythonReady = true;
-
-        statusEl.textContent =
-            "Python siap • offline";
-
-        terminal.textContent =
-            "MalzPy terminal\nPython siap.\n";
-
-    }catch(e){
-
-        pythonReady = false;
-
-        statusEl.textContent =
-            "Python gagal dimuat";
-
-        terminal.textContent =
-            "Gagal memuat MicroPython:\n" +
-            String(e);
+    if (pythonLoading) {
+        return pythonLoading;
     }
+
+    pythonLoading = (async () => {
+
+        try {
+
+            pythonReady = false;
+
+            statusEl.textContent =
+                "Memuat Python...";
+
+            terminal.textContent =
+                "MalzPy terminal\n" +
+                "Memuat MicroPython...\n";
+
+            const module =
+                await import(
+                    "./micropython/micropython.mjs"
+                );
+
+            if (!module.loadMicroPython) {
+                throw new Error(
+                    "loadMicroPython() tidak ditemukan."
+                );
+            }
+
+            mp = await module.loadMicroPython({
+                stdout: (text) => {
+                    pythonOutput(text);
+                },
+                stderr: (text) => {
+                    pythonOutput(text);
+                }
+            });
+
+            if (!mp) {
+                throw new Error(
+                    "MicroPython tidak menghasilkan runtime."
+                );
+            }
+
+            pythonReady = true;
+
+            statusEl.textContent =
+                "Python siap • offline";
+
+            terminal.textContent =
+                "MalzPy terminal\n" +
+                "Python siap.\n";
+
+        } catch (e) {
+
+            mp = null;
+            pythonReady = false;
+
+            statusEl.textContent =
+                "Python gagal dimuat";
+
+            terminal.textContent =
+                "MicroPython gagal dimuat:\n\n" +
+                String(e);
+
+            console.error(e);
+
+        }
+
+    })();
+
+    return pythonLoading;
 }
 
-window.runMicroPython = async function(code){
+window.runMicroPython = async function(code) {
 
-    if(!mp){
-        throw new Error("Python runtime belum siap.");
+    if (!pythonReady || !mp) {
+        await loadPython();
+    }
+
+    if (!pythonReady || !mp) {
+        throw new Error(
+            "MicroPython gagal dimuat. " +
+            "Lihat pesan error di terminal."
+        );
     }
 
     return await mp.runPython(code);
@@ -358,40 +469,59 @@ function saveFile(){
 
 function newFile(){
 
-    const name =
-        prompt(
-            "Masukkan nama file Python:",
-            "main.py"
-        );
+    document.getElementById("newModal").style.display =
+        "flex";
 
-    if(name === null){
-        return;
-    }
+    const input =
+        document.getElementById("newName");
 
-    let n =
-        name.trim();
+    input.value = "main.py";
 
-    if(!n){
+    setTimeout(() => {
+        input.focus();
+        input.select();
+    }, 50);
+}
+
+function closeNew(){
+
+    document.getElementById("newModal").style.display =
+        "none";
+}
+
+function createNewFile(){
+
+    const input =
+        document.getElementById("newName");
+
+    let name =
+        input.value.trim();
+
+    if(!name){
         alert("Nama file tidak boleh kosong.");
         return;
     }
 
-    if(!n.toLowerCase().endsWith(".py")){
-        n += ".py";
+    if(!name.toLowerCase().endsWith(".py")){
+        name += ".py";
     }
 
     currentFile = null;
 
-    filename.value = n;
+    filename.value = name;
+
     editor.value = "";
 
     terminal.textContent =
-        "MalzPy terminal\nFile baru: " + n;
+        "MalzPy terminal\n" +
+        "New file: " + name + "\n";
 
     statusEl.textContent =
-        "New file • " + n;
+        "New file • " + name;
 
     updateLines();
+
+    closeNew();
 
     editor.focus();
 }
