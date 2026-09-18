@@ -186,11 +186,11 @@ public class MainActivity extends Activity {
                 new LinearLayout.LayoutParams(0, dp(70), 1));
 
         runButton = btn("RUN");
-        runButton.setTextSize(15);
+        runButton.setTextSize(13);
         runButton.setTypeface(Typeface.DEFAULT_BOLD);
 
         Button menu = btn("MENU");
-        menu.setTextSize(15);
+        menu.setTextSize(13);
 
         top.addView(runButton,
                 new LinearLayout.LayoutParams(dp(72), dp(70)));
@@ -216,8 +216,7 @@ public class MainActivity extends Activity {
         editor = new CodeEditor(this);
         editor.setFocusable(true);
         editor.setFocusableInTouchMode(true);
-        editor.setKeyListener(android.text.method.TextKeyListener.getInstance());
-        editor.setCursorVisible(true);
+                editor.setCursorVisible(true);
         editor.setEnabled(true);
         editor.setClickable(true);
 
@@ -266,7 +265,7 @@ public class MainActivity extends Activity {
     private void addTool(LinearLayout bar, String label, String value) {
 
         Button b = btn(label);
-        b.setTextSize(14);
+        b.setTextSize(13);
 
         bar.addView(b,
                 new LinearLayout.LayoutParams(
@@ -372,7 +371,7 @@ public class MainActivity extends Activity {
         terminalInput.setSingleLine(true);
         terminalInput.setTextColor(Color.WHITE);
         terminalInput.setHintTextColor(Color.GRAY);
-        terminalInput.setTextSize(15);
+        terminalInput.setTextSize(13);
         terminalInput.setHint("ketik input lalu Enter");
         terminalInput.setBackgroundColor(Color.rgb(40, 43, 48));
 
@@ -467,21 +466,21 @@ public class MainActivity extends Activity {
 
             if (t.equalsIgnoreCase("run") ||
                 t.equalsIgnoreCase("menu")) {
-                bg.setColor(android.graphics.Color.rgb(70, 70, 73));
+                bg.setColor(android.graphics.Color.rgb(68, 68, 71));
                 b.setTextColor(android.graphics.Color.WHITE);
             } else {
-                bg.setColor(android.graphics.Color.rgb(58, 58, 61));
-                b.setTextColor(android.graphics.Color.rgb(225, 225, 230));
+                bg.setColor(android.graphics.Color.rgb(57, 57, 60));
+                b.setTextColor(android.graphics.Color.rgb(220, 220, 220));
             }
 
-            bg.setCornerRadius(dp(9));
+            bg.setCornerRadius(dp(7));
             b.setBackground(bg);
             b.setMinHeight(dp(38));
             b.setMinWidth(dp(48));
-            b.setPadding(dp(9), 0, dp(9), 0);
+            b.setPadding(dp(6), 0, dp(6), 0);
             b.setAllCaps(false);
             b.setGravity(android.view.Gravity.CENTER);
-            b.setTextSize(14);
+            b.setTextSize(13);
             b.setStateListAnimator(null);
             b.setElevation(dp(2));
 
@@ -509,6 +508,12 @@ public class MainActivity extends Activity {
 private void showEditor() {
         setContentView(editorPage);
         modernizeButtons(editorPage);
+
+        editor.setFocusable(true);
+        editor.setFocusableInTouchMode(true);
+        editor.setClickable(true);
+        editor.setEnabled(true);
+        editor.setCursorVisible(true);
     }
 
     private void showTerminal() {
