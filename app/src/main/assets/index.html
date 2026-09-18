@@ -287,101 +287,57 @@ Python runtime sedang dimuat...</div>
 
 let mp = null;
 let pythonReady = false;
-let pythonLoading = null;
+let pythonPromise = null;
 
-const terminal =
-    document.getElementById("terminal");
+const terminal = document.getElementById("terminal");
+const statusEl = document.getElementById("status");
 
-const statusEl =
-    document.getElementById("status");
-
-function pythonOutput(text) {
+function pyout(text) {
     terminal.textContent += String(text);
     terminal.scrollTop = terminal.scrollHeight;
 }
 
-window.onPythonOutput = pythonOutput;
+window.onPythonOutput = pyout;
 
-async function loadPython() {
+async function initPython() {
 
-    if (pythonLoading) {
-        return pythonLoading;
+    if (pythonPromise) {
+        return pythonPromise;
     }
 
-    pythonLoading = (async () => {
+    pythonPromise = (async () => {
+
+        terminal.textContent =
+            "MalzPy terminal\n" +
+            "Memuat Python...\n";
+
+        statusEl.textContent =
+            "Memuat Python...";
 
         try {
 
-            pythonReady = false;
-
-            statusEl.textContent =
-                "Memuat Python...";
-
-            terminal.textContent =
-                "MalzPy terminal\n" +
-                "Memuat MicroPython...\n";
-
-            const mjsUrl =
-                new URL(
-                    "./micropython/micropython.mjs",
-                    document.baseURI
-                ).href;
-
-            const wasmUrl =
-                new URL(
-                    "./micropython/micropython.wasm",
-                    document.baseURI
-                ).href;
-
-            terminal.textContent +=
-                "MJS: " + mjsUrl + "\n" +
-                "WASM: " + wasmUrl + "\n";
-
-            const mjsResponse =
-                await fetch(mjsUrl);
-
-            if (!mjsResponse.ok) {
-                throw new Error(
-                    "micropython.mjs HTTP " +
-                    mjsResponse.status
-                );
-            }
-
-            const wasmResponse =
-                await fetch(wasmUrl);
-
-            if (!wasmResponse.ok) {
-                throw new Error(
-                    "micropython.wasm HTTP " +
-                    wasmResponse.status
-                );
-            }
-
-            terminal.textContent +=
-                "MJS OK\n" +
-                "WASM OK\n";
+            /*
+             * Jangan fetch .mjs/.wasm secara manual.
+             * Biarkan ES module MicroPython menangani
+             * lokasi WASM-nya sendiri.
+             */
 
             const module =
-                await import(mjsUrl);
+                await import(
+                    "./micropython/micropython.mjs"
+                );
 
             if (!module.loadMicroPython) {
                 throw new Error(
-                    "loadMicroPython() tidak ditemukan."
+                    "loadMicroPython tidak tersedia."
                 );
             }
 
-            mp = await module.loadMicroPython({
-                stdout: (text) => {
-                    pythonOutput(text);
-                },
-                stderr: (text) => {
-                    pythonOutput(text);
-                }
-            });
+            mp = await module.loadMicroPython();
 
             if (!mp) {
                 throw new Error(
-                    "MicroPython tidak menghasilkan runtime."
+                    "loadMicroPython menghasilkan runtime kosong."
                 );
             }
 
@@ -394,44 +350,55 @@ async function loadPython() {
                 "MalzPy terminal\n" +
                 "Python siap.\n";
 
+            return mp;
+
         } catch (e) {
 
-            mp = null;
             pythonReady = false;
+            mp = null;
+
+            const error =
+                e && e.stack
+                    ? e.stack
+                    : String(e);
+
+            terminal.textContent =
+                "MICROPYTHON ERROR\n\n" +
+                error;
 
             statusEl.textContent =
                 "Python gagal dimuat";
 
-            terminal.textContent =
-                "MicroPython gagal dimuat:\n\n" +
-                String(e);
+            console.error(
+                "MicroPython error:",
+                e
+            );
 
-            console.error(e);
-
+            throw e;
         }
-
     })();
 
-    return pythonLoading;
+    return pythonPromise;
 }
 
 window.runMicroPython = async function(code) {
 
-    if (!pythonReady || !mp) {
-        await loadPython();
-    }
+    const runtime =
+        await initPython();
 
-    if (!pythonReady || !mp) {
+    if (!runtime) {
         throw new Error(
-            "MicroPython gagal dimuat. " +
-            "Lihat pesan error di terminal."
+            "Runtime MicroPython kosong."
         );
     }
 
-    return await mp.runPython(code);
+    return runtime.runPython(code);
 };
 
-loadPython();
+/*
+ * Mulai loading sejak aplikasi dibuka.
+ */
+initPython().catch(() => {});
 
 </script>
 
