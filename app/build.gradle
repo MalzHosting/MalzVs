@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId "com.malz.py"
-        minSdk 23
+        minSdk 24
         targetSdk 34
         versionCode 1
         versionName "1.0"
@@ -20,7 +20,10 @@ android {
     }
 }
 
-python {
+chaquopy {
+    defaultConfig {
+        version = "3.11"
+    }
 }
 
 dependencies {
